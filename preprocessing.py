@@ -79,7 +79,6 @@ if __name__ == "__main__":
             try:
                 st = obspy.read(file, format=format_in, headonly=False)
                 if correc_f:
-                    #st_orig = st.copy()
                     z, p, k = scipy.signal.tf2zpk(b, a)
                     paz = {
                         'poles': p,
@@ -87,11 +86,7 @@ if __name__ == "__main__":
                         'gain': k,
                         'sensitivity': 1}
                     st.simulate(paz_remove=paz)
-                    #st_orig[0].plot()
-                    #st[0].plot()
 
-                # Detect anomalous data
-                detect_anomalies(st, file, abs_th=1000000)
                 trace_list = split_data_per_location_channel(st)
                 write_data_per_location_channel(trace_list)
             except Exception:

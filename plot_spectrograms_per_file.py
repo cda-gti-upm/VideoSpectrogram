@@ -1,4 +1,5 @@
-# Script that reads datafiles of a specific location (geophone) and channel from a directory and computes a spectogram
+# Plot spectrogram per data file.
+# Description: script that reads datafiles of a specific location (geophone) and channel from a directory and computes a spectogram
 # per data file using librosa library. Spectrogram plots are saved in independent image files.
 
 import os

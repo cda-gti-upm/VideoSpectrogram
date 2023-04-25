@@ -1,10 +1,14 @@
-# Script that reads datafiles of a specific location (geophone) and channel from a directory and computes a spectrogram
-# per specified interval of time using librosa library. Spectrogram plots are saved in independent image files.
+# Plot spectrograms per time intervals
+# Description: script that reads datafiles of a specific location (geophone) and channel from a directory and computes
+# a spectrogram per specified interval of time using librosa library. Spectrogram plots are saved in independent image
+# files.
 
 import os
+
+import matplotlib.ticker
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
+from matplotlib.ticker import (MultipleLocator, AutoMinorLocator, AutoLocator, MaxNLocator)
 import obspy
 from obspy.core import UTCDateTime
 import librosa
@@ -76,7 +80,7 @@ if __name__ == "__main__":
         st_cp = st_cp.slice(UTCDateTime(i), UTCDateTime(i) + spectrogram_interv)
         st_cp.sort(['starttime'])
         # Merge traces
-        print(f'\nMerging data for the {i}th slot of {spectrogram_interv/3600} hour ...')
+        print(f'\nMerging data for the {c}th slot of {spectrogram_interv/3600} hour ...')
         st_cp.merge(method=0, fill_value=0)
         tr = st_cp[0]
 
@@ -101,8 +105,8 @@ if __name__ == "__main__":
         img = librosa.display.specshow(S_db, cmap='jet', sr=250, hop_length=hop_length, x_axis='time', y_axis='linear', ax=ax[1])
         #ax[1].set(title=f'Seconds relative to {t0}')
         ax[1].set_xlabel(f'Time relative to {tr.stats.starttime.strftime("%d-%b-%Y at %H:%M:%S")}')
-        ax[1].xaxis.set_major_locator(MultipleLocator(20))
-        ax[1].xaxis.set_minor_locator(MultipleLocator(5))
+        ax[1].xaxis.set_major_locator(MaxNLocator(15))
+        ax[1].xaxis.set_minor_locator(MaxNLocator(60))
         fig.colorbar(img, ax=ax, format="%+2.f dB")
 
         # To eliminate redundant axis labels, we'll use "label_outer" on all subplots:

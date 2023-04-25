@@ -1,6 +1,5 @@
 # Plot seismic data
-# Read datafiles of a specific location (geophone) and channel, select a time window and plot seismic
-# data (standard plot and a day plot).
+# Description: read datafiles of a specific location (geophone) and channel and plot seismic data (standard plot and a day plot).
 # If f_plot_datafiles = True, a time plot figure is saved per acquisition file.
 
 

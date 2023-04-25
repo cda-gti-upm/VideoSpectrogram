@@ -22,7 +22,7 @@ format_out = 'PICKLE'
 starttime = None  # Example: "2009-12-31 12:23:34". And using a ISO8601:2004 string: "2009-12-31T12:23:34.5"
 endtime = None
 # Sensor correction flag
-correc_f = True
+correc_f = False
 # Sensor correction parameters: numerator and denominator coefficients of the transfer function
 b = [1.0000, -1.5365, 0.6507]  # Numerator
 a = [-1.0000, 1.9388, -0.9388] # Denominator
