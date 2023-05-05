@@ -2,6 +2,7 @@
 - Install miniconda
 - Install Pycharm Community
 - Clone or download project from https://github.com/cda-gti-upm/pyRSAM.git
+- Create virtual environment and install packages: `conda env create -f environment.yml`
 
 # Preparing data
 - Copy the folder with all seismic data files inside the project in the data directory.

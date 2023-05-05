@@ -13,6 +13,7 @@ import obspy
 from obspy.core import UTCDateTime
 import librosa
 import numpy as np
+from utils import read_data_from_folder
 
 
 # Parameters -----------------------------------------------------------------------------------------------------------
@@ -27,30 +28,22 @@ endtime = None
 # Spectrogram interval in seconds
 spectrogram_interv = 30 * 60
 verbose = True
-
+# Spectrogram parameters (see function librosa.stft)
+win_length = 1024
+hop_length = win_length // 16
+n_fft = 4096
+window = 'hann'
+sr = 250
+# Maximum and minimum power spectral values and time amplitude to represent spectrograms and time plots. Use
+# 'range_espectrograms.py' to infer such as # values.
+S_max = 145
+S_min = 75
+a_max = 50000
+a_min = -50000
 
 # Internal parameters
 # Format of input datafiles
 format_in = 'PICKLE'
-
-
-def read_data_from_folder(path_data, format, starttime, endtime):
-    # Read all data files from directory
-    dirlist = sorted(os.listdir(path_data))
-    first_file = True
-    for file in tqdm(dirlist):
-        file = os.path.join(path_data, file)
-        if os.path.isfile(file):
-            try:
-                if first_file:
-                    st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
-                    first_file = False
-                else:
-                    st += obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
-            except Exception:
-                if verbose:
-                    print("Can not read %s" % (file))
-    return st
 
 
 if __name__ == "__main__":
@@ -94,15 +87,18 @@ if __name__ == "__main__":
         ax[0].plot(tr.times(reftime=t0), tr.data, 'k')
         ax[0].set_xlabel(f'Time relative to {tr.stats.starttime.strftime("%d-%b-%Y at %H:%M:%S")}')
         ax[0].set_ylabel('Intensity')
+        # Use the parameters [a_min, a_max] if data values are inside that range, if not use the min and max data values.
+        min_val, max_val = np.percentile(tr.data, [0, 100])
+        if a_min <= min_val and a_max >= max_val:
+            ax[0].set_ylim([a_min, a_max])
 
         # Spectrogram plot
-        win_length = 1024
-        hop_length = win_length // 16
         print(f'Computing spectrogram for the {c}th slot of {spectrogram_interv/3600} hour ...')
-        D = librosa.stft(tr.data, hop_length=hop_length, n_fft=4096, win_length=None, window='hann', center=True)
+        D = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
         # Spectrogram magnitudes to a decibel scale
-        S_db = librosa.amplitude_to_db(np.abs(D), ref=np.max, amin=100, top_db=80)
-        img = librosa.display.specshow(S_db, cmap='jet', sr=250, hop_length=hop_length, x_axis='time', y_axis='linear', ax=ax[1])
+        S_db = librosa.amplitude_to_db(np.abs(D), ref=1, amin=1e-5, top_db=None)
+        img = librosa.display.specshow(S_db, cmap='jet', sr=sr, hop_length=hop_length, x_axis='time', y_axis='linear',
+                                       ax=ax[1], vmin=S_min, vmax=S_max)
         #ax[1].set(title=f'Seconds relative to {t0}')
         ax[1].set_xlabel(f'Time relative to {tr.stats.starttime.strftime("%d-%b-%Y at %H:%M:%S")}')
         ax[1].xaxis.set_major_locator(MaxNLocator(15))

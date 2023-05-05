@@ -10,6 +10,7 @@ import obspy
 from obspy.core import UTCDateTime
 import librosa
 import numpy as np
+from utils import read_data_from_folder
 
 
 # Parameters -----------------------------------------------------------------------------------------------------------
@@ -21,33 +22,25 @@ base_path_output = './data/spectrograms'
 starttime = None  # Example: "2009-12-31 12:23:34". Alternative format using a ISO8601:2004 string:
                   # "2009-12-31T12:23:34.5"
 endtime = None
-# Spectrogram length in seconds
-spectrogram_length = 60 * 60
 verbose = True
-
+# Spectrogram parameters (see function librosa.stft)
+win_length = 1024
+hop_length = win_length // 16
+n_fft = 4096
+window = 'hann'
+sr = 250
+# Maximum and minimum power spectral values and time amplitude to represent spectrograms and time plots. Use
+# 'range_espectrograms.py' to infer such as # values.
+S_max = 145
+S_min = 75
+a_max = 40000  # 433438
+a_min = -40000  # -289208
+# Flag to filter 50 Hz
+filter_50Hz = True
 
 # Internal parameters
 # Format of input datafiles
 format_in = 'PICKLE'
-
-
-def read_data_from_folder(path_data, format, starttime, endtime):
-    # Read all data files from directory
-    dirlist = sorted(os.listdir(path_data))
-    first_file = True
-    for file in tqdm(dirlist):
-        file = os.path.join(path_data, file)
-        if os.path.isfile(file):
-            try:
-                if first_file:
-                    st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
-                    first_file = False
-                else:
-                    st += obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
-            except Exception:
-                if verbose:
-                    print("Can not read %s" % (file))
-    return st
 
 
 if __name__ == "__main__":
@@ -70,6 +63,10 @@ if __name__ == "__main__":
     # Save a spectrogram plot per data file.
     print(f'Saving spectrograms per data file ...')
     for tr in tqdm(st):
+        # Filtering 50 Hz
+        if filter_50Hz:
+            obspy.signal.filter.bandstop(tr.data, 49, 51, sr, corners=8, zerophase=False)
+
         # Generate time and spectrograms plots
         fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(18, 10), dpi=100)
         fig.suptitle(f'From {tr.stats.starttime.strftime("%d-%b-%Y at %H:%M:%S")} until {tr.stats.endtime.strftime("%d-%b-%y at %H:%M:%S")} \n'
@@ -79,14 +76,17 @@ if __name__ == "__main__":
         ax[0].plot(tr.times(reftime=tr.stats.starttime), tr.data, 'k')
         ax[0].set_xlabel(f'Time relative to {tr.stats.starttime.strftime("%d-%b-%Y at %H:%M:%S")}')
         ax[0].set_ylabel('Intensity')
+        # Use the parameters [a_min, a_max] if data values are inside that range, if not use the min and max data values.
+        min_val, max_val = np.percentile(tr.data, [0, 100])
+        if a_min <= min_val and a_max >= max_val:
+            ax[0].set_ylim([a_min, a_max])
 
         # Spectrogram plot
-        win_length = 1024
-        hop_length = win_length // 16
-        D = librosa.stft(tr.data, hop_length=hop_length, n_fft=4096, win_length=None, window='hann', center=True)
+        D = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
         # Spectrogram magnitudes to a decibel scale
-        S_db = librosa.amplitude_to_db(np.abs(D), ref=np.max, amin=100, top_db=80)
-        img = librosa.display.specshow(S_db, cmap='jet', sr=250, hop_length=hop_length, x_axis='time', y_axis='linear', ax=ax[1])
+        S_db = librosa.amplitude_to_db(np.abs(D), ref=1, amin=1e-5, top_db=None)
+        img = librosa.display.specshow(S_db, cmap='jet', sr=sr, hop_length=hop_length, x_axis='time', y_axis='linear',
+                                       ax=ax[1], vmin=S_min, vmax=S_max)
         ax[1].set_xlabel(f'Time relative to {tr.stats.starttime.strftime("%d-%b-%Y at %H:%M:%S")}')
         fig.colorbar(img, ax=ax, format="%+2.f dB")
 

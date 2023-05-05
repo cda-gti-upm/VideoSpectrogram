@@ -89,6 +89,6 @@ if __name__ == "__main__":
 
                 trace_list = split_data_per_location_channel(st)
                 write_data_per_location_channel(trace_list)
-            except Exception:
+            except Exception as e:
                 if verbose:
-                    print("Can not read %s" % (file))
+                    print("Can not read %s (%s: %s)" % (file, type(e).__name__, e))
