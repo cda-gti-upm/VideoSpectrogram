@@ -1,5 +1,6 @@
-# Script that reads datafiles of a specific location (geophone) and channel from a directory and save them in different
-# files, every one storing the data of a given time interval.
+# Store data in large size files to speed up posterior data loading
+# Description: Script that reads datafiles of a specific location (geophone) and channel from a directory and save them
+# in large size # files to speed up posterior data loading. The size is determined by the specified data time interval.
 
 import os
 from tqdm import tqdm

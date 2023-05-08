@@ -11,6 +11,8 @@
 - `preprocessing.py`: preprocess seismic data files. Read all the original files in SEG2 format from a given directory 
 and creates a new hierarchy of folders and files according to the network, station, location, channel, and information. 
 Optionally, the sensor response is corrected.
+- `store_data_per_period.py`: reads datafiles of a specific location (geophone) and channel from a directory and save 
+them in large size # files to speed up posterior data loading. The size is determined by the specified data time interval.
 
 # Plot seismic data (time plot)
 - `plot_seismic_data.py`: plot seismic data. Read datafiles of a specific location (geophone) and channel and plot 
