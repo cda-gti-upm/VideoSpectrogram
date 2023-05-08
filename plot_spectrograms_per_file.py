@@ -5,9 +5,10 @@
 import os
 from tqdm import tqdm
 import matplotlib.pyplot as plt
-from matplotlib.ticker import (MultipleLocator, AutoMinorLocator)
+from matplotlib.ticker import (MultipleLocator, AutoMinorLocator, AutoLocator, MaxNLocator)
 import obspy
 from obspy.core import UTCDateTime
+import obspy.signal.filter
 import librosa
 import numpy as np
 from utils import read_data_from_folder
@@ -31,8 +32,8 @@ window = 'hann'
 sr = 250
 # Maximum and minimum power spectral values and time amplitude to represent spectrograms and time plots. Use
 # 'range_espectrograms.py' to infer such as # values.
-S_max = 145
-S_min = 75
+S_max = 130 # 145
+S_min = 75  # 75
 a_max = 40000  # 433438
 a_min = -40000  # -289208
 # Flag to filter 50 Hz
@@ -65,7 +66,7 @@ if __name__ == "__main__":
     for tr in tqdm(st):
         # Filtering 50 Hz
         if filter_50Hz:
-            obspy.signal.filter.bandstop(tr.data, 49, 51, sr, corners=8, zerophase=False)
+            tr.data = obspy.signal.filter.bandstop(tr.data, 49, 51, sr, corners=8, zerophase=True)
 
         # Generate time and spectrograms plots
         fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(18, 10), dpi=100)
@@ -88,6 +89,8 @@ if __name__ == "__main__":
         img = librosa.display.specshow(S_db, cmap='jet', sr=sr, hop_length=hop_length, x_axis='time', y_axis='linear',
                                        ax=ax[1], vmin=S_min, vmax=S_max)
         ax[1].set_xlabel(f'Time relative to {tr.stats.starttime.strftime("%d-%b-%Y at %H:%M:%S")}')
+        ax[1].xaxis.set_major_locator(MaxNLocator(15))
+        ax[1].xaxis.set_minor_locator(MaxNLocator(60))
         fig.colorbar(img, ax=ax, format="%+2.f dB")
 
         # To eliminate redundant axis labels, we'll use "label_outer" on all subplots:

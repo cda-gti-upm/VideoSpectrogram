@@ -23,3 +23,12 @@ def read_data_from_folder(path_data, format, starttime, endtime, verbose=True):
                 if verbose:
                     print("Can not read %s (%s: %s)" % (file, type(e).__name__, e))
     return st
+
+
+def detect_anomalies(stream, abs_th):
+    # Detection of anomalous large data values
+    for i, tr in enumerate(tqdm(stream)):
+        ind = abs(tr.data) > abs_th
+        if any(ind):
+            print(f'Trace {i}, values: {tr.data[ind]}')
+        #st[0].data[ind] = val

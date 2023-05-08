@@ -12,13 +12,14 @@ import scipy.signal
 path_data = './data/LaPalma/'
 # Path for output data
 base_path_output = './data'
+
 # Sensor correction flag
 correc_f = True
 # Sensor correction parameters: coefficients of the numerator and denominator of the transfer function
 b = [1.0000, -1.5365, 0.6507]   # Numerator
 a = [-1.0000, 1.9388, -0.9388]  # Denominator
-verbose = True
 
+verbose = True
 
 # Internal parameters
 # Format of input datafiles
