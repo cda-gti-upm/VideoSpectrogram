@@ -1,0 +1,31 @@
+# Data path
+paths:
+  path_data: ./data/LaPalma/  # Path to input datafiles
+  path_output: ./data    # Path for output data (results)
+
+# Data information
+data_info:
+  network: CSIC
+  station: LaPalma
+
+# Sensor correction
+sensor_correction:
+  correc_f: True  # Correction flag
+  # Sensor correction parameters: coefficients of the numerator and denominator of the transfer function
+  b: [1.0000, -1.5365, 0.6507]   # Numerator
+  a: [-1.0000, 1.9388, -0.9388]  # Denominator
+
+# Demean data trend
+filter:
+  demean_f: True
+
+# Time interval of data
+time_interval: 86400  # Length in seconds. Example: 86400 seconds is one day.
+
+# Verbosing
+verbose: True
+
+# Data format
+data_format:
+  format_in: SEG2        # Format of input datafiles
+  format_out: PICKLE  # Format of output datafiles

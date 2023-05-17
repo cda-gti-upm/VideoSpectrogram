@@ -62,13 +62,6 @@ def write_data_per_location_channel(trace_list):
         os.makedirs(dir_name, exist_ok=True)
         trace.write(f'{dir_name}/{file_name}.pickle', format=format_out)
 
-def detect_anomalies(stream, file, abs_th):
-    # Detection of anomalous large data values
-    for i, tr in enumerate(stream):
-        ind = abs(tr.data) > abs_th
-        if any(ind):
-            print(f'Anomaly in file {file}, trace {i}, values: {tr.data[ind]}')
-
 
 # Main program
 if __name__ == "__main__":
