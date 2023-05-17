@@ -11,11 +11,46 @@ import obspy
 from obspy.core import UTCDateTime
 import obspy.signal.filter
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator, AutoLocator, MaxNLocator)
 from utils import read_data_from_folder
 import numpy as np
 import argparse
 import yaml
+
+"""
+Classes
+"""
+class _UTCDateFormatter(mdates.ConciseDateFormatter):
+    def __init__(self, locator, is_local_time):
+        super().__init__(locator)
+
+        # Determine proper time label (local time or UTC)
+        if is_local_time:
+            time_type = 'Local'
+        else:
+            time_type = 'UTC'
+
+        # Re-format datetimes
+        self.formats[1] = '%B'
+        self.zero_formats[2:4] = ['%B', '%B %d']
+        self.offset_formats = [
+            f'{time_type} time',
+            f'{time_type} time in %Y',
+            f'{time_type} time in %B %Y',
+            f'{time_type} time on %B %d, %Y',
+            f'{time_type} time on %B %d, %Y',
+            f'{time_type} time on %B %d, %Y at %H:%M',
+        ]
+
+    def set_axis(self, axis):
+        self.axis = axis
+
+        # If this is an x-axis (usually is!) then center the offset text
+        if self.axis.axis_name == 'x':
+            offset = self.axis.get_offset_text()
+            offset.set_horizontalalignment('center')
+            offset.set_x(0.5)
 
 # Main program
 if __name__ == "__main__":
@@ -79,11 +114,23 @@ if __name__ == "__main__":
         """
         fig = plt.figure(figsize=(41, 23), dpi=100)
         ax = fig.add_subplot(111)
-        plt.plot(st[0].times(reftime=tr.stats.starttime), tr.data, 'k')
+        #plt.plot(st[0].times(reftime=tr.stats.starttime), tr.data, 'k')
+        plt.plot(st[0].times(('matplotlib')), tr.data, 'k')
+        plt.title(f'Plot of {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
+                  f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
+                  f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}')
         plt.xlabel(f'Time relative to {tr.stats.starttime.strftime("%d-%b-%Y at %H:%M:%S")}')
-        ax.xaxis.set_major_formatter(librosa.display.TimeFormatter(unit=None, lag=False))
-        ax.xaxis.set_major_locator(MaxNLocator(prune=None, steps=[1, 1.5, 5, 6, 10]))
-        plt.ylabel('Intensity')
+        #ax.xaxis.set_major_formatter(librosa.display.TimeFormatter(unit=None, lag=False))
+        #ax.xaxis.set_major_locator(MaxNLocator(prune=None, steps=[1, 1.5, 5, 6, 10]))
+        #ax.xaxis.set_major_locator(MaxNLocator(15))
+        #ax.xaxis.set_minor_locator(MaxNLocator(60))
+        # Tick locating and formatting
+        locator = mdates.AutoDateLocator()
+        ax.xaxis.set_major_locator(locator)
+        is_local_time = False
+        ax.xaxis.set_major_formatter(_UTCDateFormatter(locator, is_local_time))
+        fig.autofmt_xdate()
+        plt.ylabel('Amplitude')
         # Use the parameters [a_min, a_max] if data values are inside that range. If not use the min and max data
         # values.
         min_val, max_val = np.percentile(tr.data, [0, 100])
