@@ -1,7 +1,7 @@
 """
-Plot seismic data: one plot per geophone and channel
-Read datafiles of given locations (geophones) and channels and generate one independent plot for every
-one.
+Plot seismic data: one plot for all given geophones and channels
+Read datafiles of given specific locations (geophones) and channels and generate one figure with all the
+plots.
 """
 
 import os
@@ -48,7 +48,7 @@ def read_and_preprocessing(path_data, format_in, starttime, endtime):
 
 def prepare_fig(tr, a_min, a_max, fig, ax):
     #plt.plot(tr.times(reftime=tr.stats.starttime), tr.data, 'k')
-    plt.plot(tr.times(('matplotlib')), tr.data, 'k')
+    ax.plot(tr.times(('matplotlib')), tr.data, 'k')
     ax.set(xlabel="Date",
            ylabel="Amplitude",
            title=f'Plot of {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
@@ -88,15 +88,12 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     if a_min <= min_val and a_max >= max_val:
         ax.set(ylim=[a_min, a_max])
 
-    plt.tight_layout()
-    return fig
+    return fig, ax
 
-def save_figure(path_output, tr, fig):
+def save_figure2(path_output, fig):
     plt.figure(fig)
     os.makedirs(path_output, exist_ok=True)
-    file_name = f'{path_output}/plot_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
-                f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
-                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.png'
+    file_name = f'{path_output}/plot_all_channels.png'
     plt.savefig(f'{file_name}')
 
 # Main program
@@ -116,6 +113,8 @@ if __name__ == "__main__":
     """ 
     Process every set of parameters 
     """
+    plt.rcParams['font.size'] = 30  # Change font size
+    fig, ax = plt.subplots(nrows=len(par_list), ncols=1, sharex=True, figsize=(41, 23), dpi=100)
     for i, par in enumerate(par_list):
         print(f'Processing parameter set {i+1} out of {len(par_list)}')
 
@@ -146,24 +145,20 @@ if __name__ == "__main__":
         Plot seismic data
         """
         # Prepare figure
-        plt.rcParams['font.size'] = 30 # Change font size
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(41, 23), dpi=100)
-        fig = prepare_fig(tr, a_min, a_max, fig, ax)
+        fig, ax[i] = prepare_fig(tr, a_min, a_max, fig, ax[i])
 
-        # Save figure
-        save_figure(path_output, tr, fig)
-
-        plt.close(fig)
-        del tr
+    # Save figure
+    plt.tight_layout()
+    save_figure2(path_output, fig)
 
 
-        """
-        Day plot of seismic data
-        """
-        """
-        file_name = f'{path_output}/day_plot_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
-                    f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
-                    f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.png'
-        # st.plot(type='dayplot', interval=interval_min, size=(4096, 2304))
-        st.plot(type='dayplot', interval=time_interval_one_row, size=(4096, 2304), outfile=f'{file_name}')
-        """
+    """
+    Day plot of seismic data
+    """
+    """
+    file_name = f'{path_output}/day_plot_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
+                f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
+                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.png'
+    # st.plot(type='dayplot', interval=interval_min, size=(4096, 2304))
+    st.plot(type='dayplot', interval=time_interval_one_row, size=(4096, 2304), outfile=f'{file_name}')
+    """

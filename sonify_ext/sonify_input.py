@@ -128,6 +128,8 @@ def sonify_input(
     # Use current working directory if none provided
     if not output_dir:
         output_dir = Path().cwd()
+    else:
+        os.makedirs(output_dir, exist_ok=True)
     output_dir = Path(str(output_dir)).expanduser().resolve()
     if not output_dir.is_dir():
         raise FileNotFoundError(f'Directory {output_dir} does not exist!')
@@ -278,7 +280,7 @@ def sonify_input(
     tr_audio.taper(0.01)  # For smooth start and end
     #audio_file = Path(temp_dir.name) / '47.wav'
     tr_id_str = '_'.join([code for code in tr.id.split('.') if code])
-    audio_file = output_dir / f'{tr_id_str}_{speed_up_factor}x.wav'
+    audio_file = output_dir / f'{tr_id_str}_{tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")}_{speed_up_factor}x.wav'
     print('Saving audio file...')
     tr_audio.write(
         str(audio_file),
@@ -357,7 +359,7 @@ def sonify_input(
     # MAKE COMBINED FILE
 
     tr_id_str = '_'.join([code for code in tr.id.split('.') if code])
-    output_file = output_dir / f'{tr_id_str}_{speed_up_factor}x.mp4'
+    output_file = output_dir / f'{tr_id_str}_{tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")}_{speed_up_factor}x.mp4'
     _ffmpeg_combine(audio_file, video_file, output_file, call_str)
 
     # Clean up temporary directory, just to be safe

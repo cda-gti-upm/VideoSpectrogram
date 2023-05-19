@@ -54,6 +54,7 @@ def sonify_input_wrap(path_i, i):
                  freqmax=20000 / 200,
                  speed_up_factor=200,
                  fps=10,  # Use fps=60 to ~recreate the JHEPC entry (slow to save!)
+                 output_dir='../results/audios',
                  spec_win_dur=8,
                  db_lim='smart')
 
@@ -73,9 +74,9 @@ if __name__ == '__main__':
     combined = []
     for pair in itertools.product(path_list, time_list):
         combined.append(pair)
-    random.shuffle(combined)
+    #random.shuffle(combined)
     list1, list2 = zip(*combined)
-    pool.imap(sonify_input_wrap, list1, list2)
+    pool.map(sonify_input_wrap, list1, list2)
 
 
 
