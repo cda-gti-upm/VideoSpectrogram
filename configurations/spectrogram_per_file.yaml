@@ -1,6 +1,6 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 0_X/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone 1_X/  # Path to input datafiles
   path_output: ./results/spectrogram_plots    # Path for output data (results)
 
 # Date range to plot

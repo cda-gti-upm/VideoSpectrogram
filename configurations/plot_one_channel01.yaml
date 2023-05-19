@@ -1,102 +1,5 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 0_X/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Verbosing
-verbose: True
-
----
-
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 0_Y/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Verbosing
-verbose: True
-
----
-
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 0_Z/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Verbosing
-verbose: True
-
----
-
-# Data path
-paths:
   path_data: ./data/CSIC_LaPalma_Geophone 1_X/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
@@ -122,6 +25,9 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True
@@ -155,6 +61,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -186,6 +95,9 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True
@@ -220,6 +132,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -252,6 +167,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -283,6 +201,9 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True
@@ -317,6 +238,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -349,6 +273,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -380,6 +307,9 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True
@@ -414,6 +344,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -446,6 +379,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -477,6 +413,9 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True
@@ -511,6 +450,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -543,6 +485,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -574,6 +519,9 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True
@@ -608,6 +556,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -640,6 +591,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -671,6 +625,9 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True
@@ -705,6 +662,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -737,6 +697,9 @@ plotting:
 day_plotting:
   time_interval_one_row: 1440  # In minutes
 
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
 # Verbosing
 verbose: True
 
@@ -768,6 +731,115 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+# Data path
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone 8_X/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone 8_Y/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone 8_Z/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True

@@ -51,17 +51,22 @@ def read_and_preprocessing(path_data, format_in, starttime, endtime):
 def prepare_fig(tr, a_min, a_max, fig, ax):
     print(f'Preparing figure...')
 
-    # Antialiasing filter
+    # Decimation
+    print(f'Decimation...')
     num_samples = len(tr.data)
-    fm = num_samples * 0.5
     target_num_samples = 0.8 * fig.get_size_inches()[0] * fig.dpi  # Effective number of samples in the plot
+    # More samples are considered than available in image resolution to allow zoom in vector format
+    oversampling_factor = 100
+    factor = int(num_samples / (target_num_samples * oversampling_factor))
+    tr.decimate(factor, no_filter=True)  # No antialiasing filtering because of lack of stability due to large decimation factor
+    """ Two lengthy
+    fm = num_samples * 0.5
     target_fm = target_num_samples * 0.5
     corner_freq = 0.4 * target_num_samples  # [Hz] Note that Nyquist is 0.5 * target_fm
-    """
     if corner_freq < fm / 2:  # To avoid ValueError
-        tr.filter('lowpass', freq=corner_freq, corners=10, zerophase=True)
-    """
+        tr.filter('lowpass', freq=corner_freq, corners=10, zerophase=True)    
     tr.interpolate(sampling_rate=target_fm, method='lanczos', a=20)
+    """
 
     # Plotting and formatting
     plt.plot(tr.times(('matplotlib')), tr.data, 'k')
@@ -80,16 +85,15 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     ax.xaxis.set_minor_formatter(date_form_minor)
     ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
     ax.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0,24,4)))
-    fig.autofmt_xdate()  # Angle date
+    #fig.autofmt_xdate()  # Angle date
 
     # yaxis
     ax.yaxis.set_minor_locator(AutoMinorLocator())
 
     # Change ticks
-    ax.tick_params(axis='both', which='major', length=12, width=4)
-    ax.tick_params(axis='x', which='major', labelsize=28)
-    ax.tick_params(axis='both', which='minor', length=8, width=3)
-    ax.tick_params(axis='x', which='minor', labelsize=18, rotation=25)
+    ax.tick_params(axis='x', which='major', length=32, width=5, labelsize=18, rotation=0)
+    ax.tick_params(axis='y', which='major', length=18, width=5)
+    ax.tick_params(axis='both', which='minor', length=8, width=3, labelsize=10, rotation=0)
 
     # Change font size
     #ax.title.set_fontsize(18)
@@ -107,13 +111,13 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     plt.tight_layout()
     return fig
 
-def save_figure(path_output, tr, fig):
+def save_figure(path_output, tr, fig, fig_format):
     print(f'Saving figure...')
     plt.figure(fig)
     os.makedirs(path_output, exist_ok=True)
     file_name = f'{path_output}/plot_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
-                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.png'
+                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.{fig_format}'
     """
     file_name_pickle = f'{path_output}/plot_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
@@ -152,6 +156,7 @@ if __name__ == "__main__":
         a_max = par['plotting']['a_max']
         a_min = par['plotting']['a_min']
         time_interval_one_row = par['day_plotting']['time_interval_one_row']
+        fig_format = par['fig_format']
         verbose = par['verbose']
 
         # Date preprocessing
@@ -169,12 +174,12 @@ if __name__ == "__main__":
         Plot seismic data
         """
         # Prepare figure
-        plt.rcParams['font.size'] = 30 # Change font size
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(41, 23), dpi=100)
+        plt.rcParams['font.size'] = 18 # Change font size
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 11), dpi=100)
         fig = prepare_fig(tr, a_min, a_max, fig, ax)
 
         # Save figure
-        save_figure(path_output, tr, fig)
+        save_figure(path_output, tr, fig, fig_format)
 
         plt.close(fig)
         del tr

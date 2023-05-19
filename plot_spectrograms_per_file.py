@@ -79,10 +79,9 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     ax[0].yaxis.set_minor_locator(AutoMinorLocator())
 
     # Change ticks
-    ax[0].tick_params(axis='both', which='major', length=12, width=4)
-    ax[0].tick_params(axis='x', which='major', labelsize=28)
-    ax[0].tick_params(axis='both', which='minor', length=8, width=3)
-    ax[0].tick_params(axis='x', which='minor', labelsize=18, rotation=25)
+    ax.tick_params(axis='x', which='major', length=32, width=5, labelsize=18, rotation=0)
+    ax.tick_params(axis='y', which='major', length=18, width=5)
+    ax.tick_params(axis='both', which='minor', length=8, width=3, labelsize=10, rotation=0)
 
     # Change font size
     # ax[0].title.set_fontsize(18)
@@ -117,7 +116,7 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     ax[1].xaxis.set_minor_formatter(date_form_minor)
     ax[1].xaxis.set_major_locator(mdates.DayLocator(interval=1))
     ax[1].xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 24, 4)))
-    fig.autofmt_xdate()  # Angle date
+    #fig.autofmt_xdate()  # Angle date
 
     fig.colorbar(img, ax=ax, format="%+2.f dB")
 
@@ -129,13 +128,13 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     return fig
 
 
-def save_figure(path_output, tr, fig):
+def save_figure(path_output, tr, fig, fig_format):
     print(f'Saving figure...')
     plt.figure(fig)
     os.makedirs(path_output, exist_ok=True)
     file_name = f'{path_output}/spectrogram_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
-                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.png'
+                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.{fig_format}'
     """
     file_name_pickle = f'{path_output}/spectrogram_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
@@ -181,6 +180,7 @@ if __name__ == "__main__":
         S_max = par['plotting']['S_max']
         S_min = par['plotting']['S_min']
         time_interval_one_row = par['day_plotting']['time_interval_one_row']
+        fig_format = par['fig_format']
         verbose = par['verbose']
 
         # Date preprocessing
@@ -201,8 +201,8 @@ if __name__ == "__main__":
         print(f'Saving spectrograms per data file ...')
         for tr in tqdm(st):
             # Prepare figure: spectrograms
-            plt.rcParams['font.size'] = 30  # Change font size
-            fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(41, 23), dpi=100)
+            plt.rcParams['font.size'] = 18  # Change font size
+            fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(20, 11), dpi=100)
             fig = prepare_fig(tr, a_min, a_max, fig, ax)
 
             # Save figure

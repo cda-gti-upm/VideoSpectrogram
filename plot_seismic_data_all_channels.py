@@ -49,7 +49,25 @@ def read_and_preprocessing(path_data, format_in, starttime, endtime):
 
 def prepare_fig(tr, a_min, a_max, fig, ax):
     print(f'Preparing figure...')
-    #plt.plot(tr.times(reftime=tr.stats.starttime), tr.data, 'k')
+
+    # Decimation
+    print(f'Decimation...')
+    num_samples = len(tr.data)
+    target_num_samples = 0.8 * fig.get_size_inches()[0] * fig.dpi  # Effective number of samples in the plot
+    # More samples are considered than available in image resolution to allow zoom in vector format
+    oversampling_factor = 100
+    factor = int(num_samples / (target_num_samples * oversampling_factor))
+    tr.decimate(factor, no_filter=True)  # No antialiasing filtering because of lack of stability due to large decimation factor
+    """ Two lengthy
+    fm = num_samples * 0.5
+    target_fm = target_num_samples * 0.5
+    corner_freq = 0.4 * target_num_samples  # [Hz] Note that Nyquist is 0.5 * target_fm
+    if corner_freq < fm / 2:  # To avoid ValueError
+        tr.filter('lowpass', freq=corner_freq, corners=10, zerophase=True)    
+    tr.interpolate(sampling_rate=target_fm, method='lanczos', a=20)
+    """
+
+    # Plotting and formatting
     ax.plot(tr.times(('matplotlib')), tr.data, 'k')
     ax.set(xlabel="Date",
            ylabel="Amplitude",
@@ -72,10 +90,9 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     ax.yaxis.set_minor_locator(AutoMinorLocator())
 
     # Change ticks
-    ax.tick_params(axis='both', which='major', length=12, width=4)
-    ax.tick_params(axis='x', which='major', labelsize=28)
-    ax.tick_params(axis='both', which='minor', length=8, width=3)
-    ax.tick_params(axis='x', which='minor', labelsize=18, rotation=25)
+    ax.tick_params(axis='x', which='major', length=32, width=5, labelsize=18, rotation=0)
+    ax.tick_params(axis='y', which='major', length=18, width=5)
+    ax.tick_params(axis='both', which='minor', length=8, width=3, labelsize=10, rotation=0)
 
     # Change font size
     #ax.title.set_fontsize(18)
@@ -92,14 +109,14 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
 
     return fig, ax
 
-def save_figure2(path_output, tr_info, fig):
+def save_figure2(path_output, tr_info, fig, fig_format):
     print(f'Saving figure...')
     plt.figure(fig)
     os.makedirs(path_output, exist_ok=True)
     str_tmp = ""
     for tr_i in tr_info:
         str_tmp = str_tmp + tr_i.location + tr_i.channel + '-'
-    file_name = f'{path_output}/plot_{str_tmp}.png'
+    file_name = f'{path_output}/plot_{str_tmp}.{fig_format}'
     """
     file_name_pickle = f'{path_output}/plot_{str_tmp}.pickle'
     pickle.dump(fig, open(file_name_pickle, 'wb'))
@@ -123,8 +140,8 @@ if __name__ == "__main__":
     """ 
     Process every set of parameters 
     """
-    plt.rcParams['font.size'] = 30  # Change font size
-    fig, ax = plt.subplots(nrows=len(par_list), ncols=1, sharex=True, figsize=(41, 23), dpi=100)
+    plt.rcParams['font.size'] = 18  # Change font size
+    fig, ax = plt.subplots(nrows=len(par_list), ncols=1, sharex=True, figsize=(20, 11), dpi=100)
     tr_info = list()
     for i, par in enumerate(par_list):
         print(f'Processing parameter set {i+1} out of {len(par_list)}')
@@ -139,6 +156,7 @@ if __name__ == "__main__":
         a_max = par['plotting']['a_max']
         a_min = par['plotting']['a_min']
         time_interval_one_row = par['day_plotting']['time_interval_one_row']
+        fig_format = par['fig_format']
         verbose = par['verbose']
 
         # Date preprocessing
@@ -157,13 +175,12 @@ if __name__ == "__main__":
         Plot seismic data
         """
         # Prepare figure
-        plt.rcParams['font.size'] = 30  # Change font size
         fig, ax[i] = prepare_fig(tr, a_min, a_max, fig, ax[i])
 
         del tr
 
     # Save figure
-    save_figure2(path_output, tr_info, fig)
+    save_figure2(path_output, tr_info, fig, fig_format)
 
     plt.close(fig)
 

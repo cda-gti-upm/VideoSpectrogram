@@ -1,6 +1,6 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 0_X/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone 8_X/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -25,6 +25,9 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True
@@ -32,7 +35,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 0_Y/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone 8_Y/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -57,6 +60,9 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True
@@ -64,7 +70,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 0_Z/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone 8_Z/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -89,6 +95,9 @@ plotting:
 # Day plotting
 day_plotting:
   time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
 
 # Verbosing
 verbose: True
