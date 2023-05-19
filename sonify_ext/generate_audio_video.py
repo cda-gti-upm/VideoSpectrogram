@@ -13,7 +13,7 @@ path_data = '../data/CSIC_LaPalma_Geophone 0_X'
 
 
 starttime = "2021-11-29 00:00:00"
-endtime = "2021-11-30 00:03:00"
+endtime = "2021-11-30 00:30:00"
 
 
 """

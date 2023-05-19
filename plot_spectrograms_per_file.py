@@ -24,11 +24,9 @@ import pickle
 """
 Functions
 """
-
-
 def read_and_preprocessing(path_data, format_in, starttime, endtime):
     """
-    Read, sort, merge, and filter data
+    Read, sort, and filter data
     """
     # Read data
     print(f'Reading data ...')
@@ -73,15 +71,15 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     ax[0].xaxis.set_minor_formatter(date_form_minor)
     ax[0].xaxis.set_major_locator(mdates.DayLocator(interval=1))
     ax[0].xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 24, 4)))
-    fig.autofmt_xdate()  # Angle date
+    #fig.autofmt_xdate()  # Angle date
 
     # yaxis
     ax[0].yaxis.set_minor_locator(AutoMinorLocator())
 
     # Change ticks
-    ax.tick_params(axis='x', which='major', length=32, width=5, labelsize=18, rotation=0)
-    ax.tick_params(axis='y', which='major', length=18, width=5)
-    ax.tick_params(axis='both', which='minor', length=8, width=3, labelsize=10, rotation=0)
+    ax[0].tick_params(axis='x', which='major', length=32, width=5, labelsize=18, rotation=0)
+    ax[0].tick_params(axis='y', which='major', length=18, width=5)
+    ax[0].tick_params(axis='both', which='minor', length=8, width=3, labelsize=10, rotation=0)
 
     # Change font size
     # ax[0].title.set_fontsize(18)
@@ -102,12 +100,12 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     D = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
     # Spectrogram magnitudes to a decibel scale
     S_db = librosa.amplitude_to_db(np.abs(D), ref=1, amin=1e-5, top_db=None)
-    img = librosa.display.specshow(S_db, cmap='jet', sr=sr, hop_length=hop_length, x_axis='time', y_axis='linear',
+    img = librosa.display.specshow(S_db, cmap='jet', sr=tr.meta.sampling_rate, hop_length=hop_length, x_axis='time', y_axis='linear',
                                    ax=ax[1], vmin=S_min, vmax=S_max)
     ax[1].set(xlabel="Date",
               ylabel="Frequency"
               )
-    # ax[0].set(xlim=["2005-06-01", "2005-08-31"])
+    # ax[1].set(xlim=["2005-06-01", "2005-08-31"])
 
     # Define the date format
     date_form_major = DateFormatter("%d-%b-%Y")
@@ -124,19 +122,20 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     for ax_i in ax:
         ax_i.label_outer()
 
+    ax.autoscale(enable=True, axis='x', tight=True)
     plt.tight_layout()
     return fig
 
 
-def save_figure(path_output, tr, fig, fig_format):
+def save_figure(path_output, prefix_name, tr, fig, fig_format):
     print(f'Saving figure...')
     plt.figure(fig)
     os.makedirs(path_output, exist_ok=True)
-    file_name = f'{path_output}/spectrogram_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
+    file_name = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
                 f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.{fig_format}'
     """
-    file_name_pickle = f'{path_output}/spectrogram_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
+    file_name_pickle = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
                 f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.pickle'
     pickle.dump(fig, open(file_name_pickle, 'wb'))
@@ -202,11 +201,11 @@ if __name__ == "__main__":
         for tr in tqdm(st):
             # Prepare figure: spectrograms
             plt.rcParams['font.size'] = 18  # Change font size
-            fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(20, 11), dpi=100)
+            fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(19, 10), dpi=100)
             fig = prepare_fig(tr, a_min, a_max, fig, ax)
 
             # Save figure
-            save_figure(path_output, tr, fig)
+            save_figure(path_output, 'Spectrogram', tr, fig)
 
             plt.close(fig)
 

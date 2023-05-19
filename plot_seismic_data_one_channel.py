@@ -19,6 +19,7 @@ import numpy as np
 import argparse
 import yaml
 import pickle
+from scipy.ndimage import uniform_filter1d
 
 """
 Functions
@@ -48,7 +49,7 @@ def read_and_preprocessing(path_data, format_in, starttime, endtime):
 
     return tr
 
-def prepare_fig(tr, a_min, a_max, fig, ax):
+def prepare_fig(tr, prefix_name, a_min, a_max, fig, ax):
     print(f'Preparing figure...')
 
     # Decimation
@@ -58,7 +59,8 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     # More samples are considered than available in image resolution to allow zoom in vector format
     oversampling_factor = 100
     factor = int(num_samples / (target_num_samples * oversampling_factor))
-    tr.decimate(factor, no_filter=True)  # No antialiasing filtering because of lack of stability due to large decimation factor
+    if factor > 1:
+        tr.decimate(factor, no_filter=True)  # No antialiasing filtering because of lack of stability due to large decimation factor
     """ Two lengthy
     fm = num_samples * 0.5
     target_fm = target_num_samples * 0.5
@@ -72,7 +74,7 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     plt.plot(tr.times(('matplotlib')), tr.data, 'k')
     ax.set(xlabel="Date",
            ylabel="Amplitude",
-           title=f'Plot of {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
+           title=f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
                  f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
                  f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
            )
@@ -108,14 +110,15 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     if a_min <= min_val and a_max >= max_val:
         ax.set(ylim=[a_min, a_max])
 
+    ax.autoscale(enable=True, axis='x', tight=True)
     plt.tight_layout()
     return fig
 
-def save_figure(path_output, tr, fig, fig_format):
+def save_figure(path_output, prefix_name, tr, fig, fig_format):
     print(f'Saving figure...')
     plt.figure(fig)
     os.makedirs(path_output, exist_ok=True)
-    file_name = f'{path_output}/plot_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
+    file_name = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
                 f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.{fig_format}'
     """
@@ -169,20 +172,39 @@ if __name__ == "__main__":
         Read, sort, merge, and filter data
         """
         tr = read_and_preprocessing(path_data, format_in, starttime, endtime)
+        tr_rsam = tr.copy()
 
         """
         Plot seismic data
         """
         # Prepare figure
         plt.rcParams['font.size'] = 18 # Change font size
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(20, 11), dpi=100)
-        fig = prepare_fig(tr, a_min, a_max, fig, ax)
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(19, 10), dpi=100)
+        fig = prepare_fig(tr, 'Plot', a_min, a_max, fig, ax)
 
         # Save figure
-        save_figure(path_output, tr, fig, fig_format)
+        save_figure(path_output, 'Plot', tr, fig, fig_format)
 
         plt.close(fig)
         del tr
+
+        """
+        Plot RSAM
+        """
+        # Computes RSAM
+        n_samples = int(tr_rsam.meta.sampling_rate*60*10)  # Amount to 10 minutes
+        tr_rsam.data = uniform_filter1d(abs(tr_rsam.data), size=n_samples)
+
+        # Prepare figure
+        plt.rcParams['font.size'] = 18 # Change font size
+        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(19, 10), dpi=100)
+        fig = prepare_fig(tr_rsam, 'RSAM', 0, 1000, fig, ax)
+
+        # Save figure
+        save_figure(path_output, 'RSAM', tr_rsam, fig, fig_format)
+
+        plt.close(fig)
+        del tr_rsam
 
 
         """

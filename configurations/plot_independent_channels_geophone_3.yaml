@@ -1,6 +1,6 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 3_X/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone3_X/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -35,7 +35,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 3_Y/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone3_Y/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -70,7 +70,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 3_Z/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone3_Z/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot

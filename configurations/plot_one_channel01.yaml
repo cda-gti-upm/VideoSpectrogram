@@ -1,6 +1,6 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 1_X/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone1_X/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -35,7 +35,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 1_Y/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone1_Y/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -70,113 +70,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 1_Z/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Format of figure file
-fig_format: svg  # png, eps, pdf
-
-# Verbosing
-verbose: True
-
----
-
-# Data path
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 2_X/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Format of figure file
-fig_format: svg  # png, eps, pdf
-
-# Verbosing
-verbose: True
-
----
-
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 2_Y/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Format of figure file
-fig_format: svg  # png, eps, pdf
-
-# Verbosing
-verbose: True
-
----
-
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 2_Z/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone1_Z/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -212,7 +106,7 @@ verbose: True
 
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 3_X/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone2_X/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -247,7 +141,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 3_Y/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone2_Y/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -282,113 +176,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 3_Z/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Format of figure file
-fig_format: svg  # png, eps, pdf
-
-# Verbosing
-verbose: True
-
----
-
-# Data path
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 4_X/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Format of figure file
-fig_format: svg  # png, eps, pdf
-
-# Verbosing
-verbose: True
-
----
-
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 4_Y/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Format of figure file
-fig_format: svg  # png, eps, pdf
-
-# Verbosing
-verbose: True
-
----
-
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 4_Z/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone2_Z/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -424,7 +212,7 @@ verbose: True
 
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 5_X/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone3_X/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -459,7 +247,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 5_Y/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone3_Y/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -494,113 +282,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 5_Z/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Format of figure file
-fig_format: svg  # png, eps, pdf
-
-# Verbosing
-verbose: True
-
----
-
-# Data path
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 6_X/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Format of figure file
-fig_format: svg  # png, eps, pdf
-
-# Verbosing
-verbose: True
-
----
-
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 6_Y/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
-
-# Date range to plot
-date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
-
-# Filtering
-filter:
-  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
-
-# Data format
-data_format:
-  format_in:  PICKLE  # Format of input datafiles
-
-# Plotting
-plotting:
-  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
-  a_max: 40000   # 433438
-  a_min: -40000  # -289208
-
-# Day plotting
-day_plotting:
-  time_interval_one_row: 1440  # In minutes
-
-# Format of figure file
-fig_format: svg  # png, eps, pdf
-
-# Verbosing
-verbose: True
-
----
-
-paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 6_Z/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone3_Z/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -636,7 +318,7 @@ verbose: True
 
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 7_X/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone4_X/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -671,7 +353,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 7_Y/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone4_Y/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -706,7 +388,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 7_Z/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone4_Z/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -742,7 +424,7 @@ verbose: True
 
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 8_X/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone5_X/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -777,7 +459,7 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 8_Y/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone5_Y/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -812,7 +494,325 @@ verbose: True
 ---
 
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone 8_Z/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma_Geophone5_Z/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+# Data path
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone6_X/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone6_Y/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone6_Z/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+# Data path
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone7_X/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone7_Y/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone7_Z/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+# Data path
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone8_X/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone8_Y/  # Path to input datafiles
+  path_output: ./results/seismic_plots    # Path for output data (results)
+
+# Date range to plot
+date_range:
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
+
+# Filtering
+filter:
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
+
+# Data format
+data_format:
+  format_in:  PICKLE  # Format of input datafiles
+
+# Plotting
+plotting:
+  # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
+  a_max: 40000   # 433438
+  a_min: -40000  # -289208
+
+# Day plotting
+day_plotting:
+  time_interval_one_row: 1440  # In minutes
+
+# Format of figure file
+fig_format: svg  # png, eps, pdf
+
+# Verbosing
+verbose: True
+
+---
+
+paths:
+  path_data: ./data/CSIC_LaPalma_Geophone8_Z/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
