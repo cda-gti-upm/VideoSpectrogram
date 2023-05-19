@@ -18,6 +18,7 @@ from utils import read_data_from_folder
 import numpy as np
 import argparse
 import yaml
+import pickle
 
 """
 Functions
@@ -47,6 +48,7 @@ def read_and_preprocessing(path_data, format_in, starttime, endtime):
     return tr
 
 def prepare_fig(tr, a_min, a_max, fig, ax):
+    print(f'Preparing figure...')
     #plt.plot(tr.times(reftime=tr.stats.starttime), tr.data, 'k')
     ax.plot(tr.times(('matplotlib')), tr.data, 'k')
     ax.set(xlabel="Date",
@@ -90,10 +92,18 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
 
     return fig, ax
 
-def save_figure2(path_output, fig):
+def save_figure2(path_output, tr_info, fig):
+    print(f'Saving figure...')
     plt.figure(fig)
     os.makedirs(path_output, exist_ok=True)
-    file_name = f'{path_output}/plot_all_channels.png'
+    str_tmp = ""
+    for tr_i in tr_info:
+        str_tmp = str_tmp + tr_i.location + tr_i.channel + '-'
+    file_name = f'{path_output}/plot_{str_tmp}.png'
+    """
+    file_name_pickle = f'{path_output}/plot_{str_tmp}.pickle'
+    pickle.dump(fig, open(file_name_pickle, 'wb'))
+    """
     plt.savefig(f'{file_name}')
 
 # Main program
@@ -115,6 +125,7 @@ if __name__ == "__main__":
     """
     plt.rcParams['font.size'] = 30  # Change font size
     fig, ax = plt.subplots(nrows=len(par_list), ncols=1, sharex=True, figsize=(41, 23), dpi=100)
+    tr_info = list()
     for i, par in enumerate(par_list):
         print(f'Processing parameter set {i+1} out of {len(par_list)}')
 
@@ -140,16 +151,21 @@ if __name__ == "__main__":
         Read, sort, merge, and filter data
         """
         tr = read_and_preprocessing(path_data, format_in, starttime, endtime)
+        tr_info.append(tr.meta)
 
         """
         Plot seismic data
         """
         # Prepare figure
+        plt.rcParams['font.size'] = 30  # Change font size
         fig, ax[i] = prepare_fig(tr, a_min, a_max, fig, ax[i])
 
+        del tr
+
     # Save figure
-    plt.tight_layout()
-    save_figure2(path_output, fig)
+    save_figure2(path_output, tr_info, fig)
+
+    plt.close(fig)
 
 
     """

@@ -43,7 +43,7 @@ def split_data_per_location_channel(stream, network, station):
     n_c = len(channels)
     trace_list = []
     for i, trace in enumerate(stream):
-        location = f'Geophone {i // n_c}'
+        location = f'Geophone{(i // n_c)+1}'  # Start geophone count in 1 (not 0)
         channel = channels[i % n_c]
         trace.meta.network = network
         trace.stats.network = network

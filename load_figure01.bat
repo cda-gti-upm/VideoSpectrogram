@@ -1,0 +1,1 @@
+python load_figure.py results/seismic_plots/plot_CSIC_LaPalma_Geophone 0_X_from 23-Nov-2021 at 00.00.01 until 01-Dec-2021 at 00.00.07.pickle

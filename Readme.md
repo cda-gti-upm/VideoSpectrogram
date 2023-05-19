@@ -8,13 +8,12 @@
 - Copy the folder with all seismic data files inside the project in the data directory.
 
 # Read seismic data files and preprocessing
-- `preprocessing.py`: preprocess seismic data files. Read all the original files in SEG2 format from a given directory 
-and creates a new hierarchy of folders and files according to the network, station, location, channel, and information. 
-Optionally, the sensor response is corrected.
-- `store_data_per_period.py`: reads datafiles of a specific location (geophone) and channel from a directory and save 
-them in large size # files to speed up posterior data loading. The size is determined by the specified data time interval.
+- Execute from terminal: `data_preprocessing01.bat` or alternatively `python data_preprocessing.py configurations/preprocessing01.yaml`.
 
 # Plot seismic data (time plot)
+- Execute from terminal: `plot_seismic_data_one_channel01.bat` or alternatively `python plot_seismic_data_one_channel.py configurations/plot_independent_channels_geophone_0.yaml` (several yaml configuration files can be used for the different geophones). 
+- 
+
 - `plot_seismic_data.py`: plot seismic data. Read datafiles of a specific location (geophone) and channel and plot 
 seismic data (standard plot and a day plot). If flag variable `f_plot_datafiles = True`, a time plot figure is saved per 
 acquisition file.

@@ -18,6 +18,7 @@ from utils import read_data_from_folder
 import numpy as np
 import argparse
 import yaml
+import pickle
 
 """
 Functions
@@ -44,10 +45,25 @@ def read_and_preprocessing(path_data, format_in, starttime, endtime):
     if filter_50Hz_f:
         print(f'Filtering 50 Hz signal ...')
         tr.data = obspy.signal.filter.bandstop(tr.data, 49, 51, tr.meta.sampling_rate, corners=8, zerophase=True)
+
     return tr
 
 def prepare_fig(tr, a_min, a_max, fig, ax):
-    #plt.plot(tr.times(reftime=tr.stats.starttime), tr.data, 'k')
+    print(f'Preparing figure...')
+
+    # Antialiasing filter
+    num_samples = len(tr.data)
+    fm = num_samples * 0.5
+    target_num_samples = 0.8 * fig.get_size_inches()[0] * fig.dpi  # Effective number of samples in the plot
+    target_fm = target_num_samples * 0.5
+    corner_freq = 0.4 * target_num_samples  # [Hz] Note that Nyquist is 0.5 * target_fm
+    """
+    if corner_freq < fm / 2:  # To avoid ValueError
+        tr.filter('lowpass', freq=corner_freq, corners=10, zerophase=True)
+    """
+    tr.interpolate(sampling_rate=target_fm, method='lanczos', a=20)
+
+    # Plotting and formatting
     plt.plot(tr.times(('matplotlib')), tr.data, 'k')
     ax.set(xlabel="Date",
            ylabel="Amplitude",
@@ -92,11 +108,18 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     return fig
 
 def save_figure(path_output, tr, fig):
+    print(f'Saving figure...')
     plt.figure(fig)
     os.makedirs(path_output, exist_ok=True)
     file_name = f'{path_output}/plot_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
                 f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.png'
+    """
+    file_name_pickle = f'{path_output}/plot_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
+                f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
+                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.pickle'
+    pickle.dump(fig, open(file_name_pickle, 'wb'))
+    """
     plt.savefig(f'{file_name}')
 
 # Main program

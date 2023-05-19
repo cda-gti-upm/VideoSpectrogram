@@ -1,7 +1,7 @@
 # Data path
 paths:
   path_data: ./data/CSIC_LaPalma_Geophone 0_X/  # Path to input datafiles
-  path_output: ./results/seismic_plots    # Path for output data (results)
+  path_output: ./results/spectrogram_plots    # Path for output data (results)
 
 # Date range to plot
 date_range:
@@ -16,11 +16,21 @@ filter:
 data_format:
   format_in:  PICKLE  # Format of input datafiles
 
+# Spectrograms (see function librosa.stft)
+Spectrogram:
+  win_length: 1024
+  hop_length: 64
+  n_fft: 4096
+  window: 'hann'
+
 # Plotting
 plotting:
   # Maximum and minimum amplitude to represent time plots. Use 'range_espectrograms.py' to infer such as values.
   a_max: 40000   # 433438
   a_min: -40000  # -289208
+  # Maximum and minimum power spectral values to represent spectrograms. Use 'range_espectrograms.py' to infer such as values.
+  S_max: 130 # 145
+  S_min: 75  # 75
 
 # Day plotting
 day_plotting:
