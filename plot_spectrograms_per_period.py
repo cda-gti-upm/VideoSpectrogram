@@ -57,7 +57,7 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     # More samples are considered than available in image resolution to allow zoom in vector format
     oversampling_factor = 100
     factor = int(num_samples / (target_num_samples * oversampling_factor))
-    if factor > 1:
+    if False: #factor > 1:
         tr.decimate(factor, no_filter=True)  # No antialiasing filtering because of lack of stability due to large decimation factor
     """ Two lengthy
     fm = num_samples * 0.5
@@ -76,6 +76,7 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     """
     Time intensity plot
     """
+    print(f'Time plotting...')
     ax[0].plot(tr.times(('matplotlib')), tr.data, 'k')
     ax[0].set(xlabel="Date",
               ylabel="Amplitude"
@@ -83,21 +84,25 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     # ax[0].set(xlim=["2005-06-01", "2005-08-31"])
 
     # Define the date format
-    date_form_major = DateFormatter("%d-%b-%Y")
+    """
+    date_form_major = DateFormatter("%H")
     ax[0].xaxis.set_major_formatter(date_form_major)
-    date_form_minor = DateFormatter("%H")
+    date_form_minor = DateFormatter("%M")
     ax[0].xaxis.set_minor_formatter(date_form_minor)
-    ax[0].xaxis.set_major_locator(mdates.DayLocator(interval=1))
-    ax[0].xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 24, 4)))
+    ax[0].xaxis.set_major_locator(mdates.HourLocator())
+    ax[0].xaxis.set_minor_locator(mdates.MinuteLocator())
     #fig.autofmt_xdate()  # Angle date
+    """
 
     # yaxis
     ax[0].yaxis.set_minor_locator(AutoMinorLocator())
 
+    """
     # Change ticks
     ax[0].tick_params(axis='x', which='major', length=32, width=5, labelsize=18, rotation=0)
     ax[0].tick_params(axis='y', which='major', length=18, width=5)
     ax[0].tick_params(axis='both', which='minor', length=8, width=3, labelsize=10, rotation=0)
+    """
 
     # Change font size
     # ax[0].title.set_fontsize(18)
@@ -112,9 +117,13 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     if a_min <= min_val and a_max >= max_val:
         ax[0].set(ylim=[a_min, a_max])
 
+    #ax[0].autoscale(enable=True, axis='x', tight=True)
+
+
     """
     Spectrogram plot
     """
+    print(f'Spectrogram computation...')
     D = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
     # Spectrogram magnitudes to a decibel scale
     S_db = librosa.amplitude_to_db(np.abs(D), ref=1, amin=1e-5, top_db=None)
@@ -126,6 +135,7 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     # ax[1].set(xlim=["2005-06-01", "2005-08-31"])
 
     # Define the date format
+    """
     date_form_major = DateFormatter("%d-%b-%Y")
     ax[1].xaxis.set_major_formatter(date_form_major)
     date_form_minor = DateFormatter("%H")
@@ -133,6 +143,10 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     ax[1].xaxis.set_major_locator(mdates.DayLocator(interval=1))
     ax[1].xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 24, 4)))
     #fig.autofmt_xdate()  # Angle date
+    """
+    locator = mdates.AutoDateLocator()
+    ax[1].xaxis.set_major_locator(locator)
+    #ax[1].xaxis.set_major_formatter(_UTCDateFormatter(locator, is_local_time))
 
     fig.colorbar(img, ax=ax, format="%+2.f dB")
 
@@ -140,9 +154,8 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     for ax_i in ax:
         ax_i.label_outer()
 
-    ax.autoscale(enable=True, axis='x', tight=True)
-    plt.tight_layout()
-    return fig
+    #ax[1].autoscale(enable=True, axis='x', tight=True)
+    return fig, ax
 
 
 def save_figure(path_output, prefix_name, tr, fig, fig_format):
@@ -230,10 +243,10 @@ if __name__ == "__main__":
             # Prepare figure: spectrograms
             plt.rcParams['font.size'] = 18  # Change font size
             fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(19, 10), dpi=100)
-            fig = prepare_fig(tr, a_min, a_max, fig, ax)
+            fig, ax = prepare_fig(tr, a_min, a_max, fig, ax)
 
             # Save figure
-            save_figure(path_output, 'Spectrogram', tr, fig)
+            save_figure(path_output, 'Spectrogram', tr, fig, fig_format)
 
             plt.close(fig)
             del tr

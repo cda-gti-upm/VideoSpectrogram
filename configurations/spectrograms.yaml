@@ -22,7 +22,7 @@ spectrogram:
   hop_length: 64
   n_fft: 4096
   window: 'hann'
-  spec_interval: 86400  # Spectrogram interval in seconds
+  spec_interval: 10800  # Spectrogram interval in seconds
 
 # Plotting
 plotting:
