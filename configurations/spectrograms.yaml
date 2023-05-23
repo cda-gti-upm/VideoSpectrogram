@@ -19,10 +19,10 @@ data_format:
 # Spectrograms (see function librosa.stft)
 spectrogram:
   win_length: 1024
-  hop_length: 64
-  n_fft: 4096
+  hop_length: 256
+  n_fft: 2048
   window: 'hann'
-  spec_interval: 10800  # Spectrogram interval in seconds
+  spec_interval: 21600  # Spectrogram interval in seconds
 
 # Plotting
 plotting:

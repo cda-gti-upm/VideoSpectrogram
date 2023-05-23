@@ -9,11 +9,10 @@ from tqdm import tqdm
 """
 Arguments
 """
-path_data = '../data/CSIC_LaPalma_Geophone 0_X'
-
-
+path_data = '../data/CSIC_LaPalma_Geophone8_Y'
 starttime = "2021-11-29 00:00:00"
-endtime = "2021-11-30 00:30:00"
+endtime = "2021-11-29 01:00:00"
+speed_up_factor = 50
 
 
 """
@@ -25,6 +24,7 @@ if starttime:
 if endtime:
     endtime = UTCDateTime(endtime)
 
+# Audio and video generation
 sonify_input(
     path_data=path_data,
     format_in='PICKLE',
@@ -32,7 +32,7 @@ sonify_input(
     endtime=endtime,
     freqmin=20/200,
     freqmax=20000/200,
-    speed_up_factor=200,
+    speed_up_factor=speed_up_factor,
     fps=10,  # Use fps=60 to ~recreate the JHEPC entry (slow to save!)
     output_dir='../results/audios',
     spec_win_dur=8,
