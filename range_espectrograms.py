@@ -18,7 +18,7 @@ import sys
 # Parameters
 # ----------------------------------------------------------------------------------------------------------------------
 # Path to input datafiles regarding a specific location (geophone) and channel
-path_data = './data/CSIC/LaPalma/Geophone_0/X/'  # './data/prueba'
+path_data = './data/CSIC_LaPalma_Geophone1_X/'  # './data/prueba'
 # Select time window
 starttime = None  # Example: "2009-12-31 12:23:34". Alternative format using a ISO8601:2004 string:
                   # "2009-12-31T12:23:34.5"

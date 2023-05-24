@@ -1,10 +1,10 @@
-# Plot spectrograms per time intervals
-# Description: script that reads datafiles of a specific location (geophone) and channel from a directory and computes
-# a spectrogram per specified interval of time using librosa library. Spectrogram plots are saved in independent image
-# files.
+"""
+Plot spectrograms per specified time intervals
+Reads datafiles of a specific location (geophone) and channel from a directory and computes a spectrogram per specified
+interval of time using librosa library. Spectrogram plots are saved in independent image files.
+"""
 
 import os
-
 import matplotlib.ticker
 from tqdm import tqdm
 import matplotlib.pyplot as plt
@@ -148,7 +148,7 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     # Define the date format
     date_form_major = DateFormatter("%d-%b-%Y\n %H:%M")
     ax[1].xaxis.set_major_formatter(date_form_major)
-    locator = AutoDateLocator(minticks=6,  maxticks=9, interval_multiples=False)
+    locator = AutoDateLocator(minticks=10,  maxticks=10, interval_multiples=False)
     locator.intervald['HOURLY'] = np.arange(12)+1
     locator.intervald['MINUTELY'] = np.arange(60)+1
     locator.intervald['SECONDLY'] = [1, 3, 5, 10, 15, 20, 30, 35, 40, 45, 50, 55]
