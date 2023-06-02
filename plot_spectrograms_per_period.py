@@ -262,6 +262,10 @@ if __name__ == "__main__":
         endday = UTCDateTime(st[-1].stats.endtime.date)
         for c, i in tqdm(enumerate(range(int(startday.timestamp), int(endday.timestamp), spec_interval))):
             st_cp = st.slice(UTCDateTime(i), UTCDateTime(i) + spec_interval)
+            if not st_cp:
+                print(f'No data in period ({UTCDateTime(i).strftime("%d-%b-%Y at %H.%M.%S")} - '
+                      f'{UTCDateTime(i+spec_interval).strftime("%d-%b-%Y at %H.%M.%S")})')
+                continue
             st_cp.sort(['starttime'])
             # Merge traces
             print(f'\nMerging data for the {c}th slot of {spec_interval/3600} hour ...')

@@ -9,9 +9,9 @@ from tqdm import tqdm
 """
 Arguments
 """
-path_data = '../data/CSIC_LaPalma_Geophone8_Y'
-starttime = "2021-11-29 00:00:00"
-endtime = "2021-11-29 01:00:00"
+path_data = '../data/CSIC_LaPalma_Geophone8_Z'
+starttime = "2021-11-29 00:30:00"
+endtime = "2021-11-29 00:50:00"
 speed_up_factor = 50
 
 
@@ -30,8 +30,8 @@ sonify_input(
     format_in='PICKLE',
     starttime=starttime,
     endtime=endtime,
-    freqmin=20/speed_up_factor,
-    freqmax=20000/speed_up_factor,
+    freqmin=None,
+    freqmax=None,
     speed_up_factor=speed_up_factor,
     fps=10,  # Use fps=60 to ~recreate the JHEPC entry (slow to save!)
     output_dir='../results/audios',
