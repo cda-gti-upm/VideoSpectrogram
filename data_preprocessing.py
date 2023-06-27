@@ -161,8 +161,8 @@ if __name__ == "__main__":
         print(f'Data spans from {st[0].stats.starttime} until {st[-1].stats.endtime}')
 
         # Write data per time interval
-        startday = UTCDateTime(st[0].stats.starttime.date)
-        endday = UTCDateTime(st[-1].stats.endtime.date)
+        startday = UTCDateTime(st[0].stats.starttime)
+        endday = UTCDateTime(st[-1].stats.endtime)
         last_time = []
         for i in tqdm(range(int(startday.timestamp), int(endday.timestamp) + 1, time_interval)):
             st_day = st.slice(UTCDateTime(i), UTCDateTime(i) + time_interval - 1)

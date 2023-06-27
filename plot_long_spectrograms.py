@@ -1,7 +1,7 @@
 """
-Plot spectrograms per specified time intervals
-Reads datafiles of a specific location (geophone) and channel from a directory and computes a spectrogram per specified
-interval of time using librosa library. Spectrogram plots are saved in independent image files.
+Plot long-time spectrograms (LTSA)
+Reads datafiles of a specific location (geophone) and channel from a directory and computes a long-time spectrograms
+(LTSA).
 """
 
 import os
@@ -21,6 +21,7 @@ from utils import read_data_from_folder
 import argparse
 import yaml
 import pickle
+import ltsa
 
 """
 Functions
@@ -233,7 +234,7 @@ if __name__ == "__main__":
         hop_length = par['spectrogram']['hop_length']
         n_fft = par['spectrogram']['n_fft']
         window = par['spectrogram']['window']
-        spec_interval = par['spectrogram']['spec_interval']
+        #spec_interval = par['spectrogram']['spec_interval']
         a_max = par['plotting']['a_max']
         a_min = par['plotting']['a_min']
         S_max = par['plotting']['S_max']
@@ -254,31 +255,37 @@ if __name__ == "__main__":
         st = read_and_preprocessing(path_data, format_in, starttime, endtime)
 
         """
-        Plot spectrogram per period
+        Plot LTSA
         """
-        print(f'Saving spectrograms every {spec_interval/3600} hours ...')
         # Group streams of data per user defined time period
-        startday = UTCDateTime(st[0].stats.starttime)
-        endday = UTCDateTime(st[-1].stats.endtime)
+        startday = UTCDateTime(st[0].stats.starttime.date)
+        endday = UTCDateTime(st[-1].stats.endtime.date)
+        """
         for c, i in tqdm(enumerate(range(int(startday.timestamp), int(endday.timestamp), spec_interval))):
             st_cp = st.slice(UTCDateTime(i), UTCDateTime(i) + spec_interval)
-            if not st_cp:
-                print(f'No data in period ({UTCDateTime(i).strftime("%d-%b-%Y at %H.%M.%S")} - '
-                      f'{UTCDateTime(i+spec_interval).strftime("%d-%b-%Y at %H.%M.%S")})')
-                continue
-            st_cp.sort(['starttime'])
-            # Merge traces
-            print(f'\nMerging data for the {c}th slot of {spec_interval/3600} hour ...')
-            st_cp.merge(method=0, fill_value=0)
-            tr = st_cp[0]
+        """
+        if not st:
+            print(f'No data in period ({startday.strftime("%d-%b-%Y at %H.%M.%S")} - '
+                  f'{endday.strftime("%d-%b-%Y at %H.%M.%S")})')
+            continue
 
-            # Prepare figure: spectrograms
-            plt.rcParams['font.size'] = 18  # Change font size
-            fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(19, 10), dpi=100)
-            fig, ax = prepare_fig(tr, a_min, a_max, fig, ax)
+        st.sort(['starttime'])
+        # Merge traces
+        print(f'\nMerging data into one trace ...')
+        st.merge(method=0, fill_value=0)
+        tr = st[0]
 
-            # Save figure
-            save_figure(path_output, 'Spectrogram', tr, fig, fig_format)
+        # Compute LTSA
+        print(f'Computing Long Term Spectral Averages ...')
+        ltsa.seismicLTSA(tr.data, tr.meta.sampling_rate)
 
-            plt.close(fig)
-            del tr
+        # Prepare figure: spectrograms
+        plt.rcParams['font.size'] = 18  # Change font size
+        fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(19, 10), dpi=100)
+        fig, ax = prepare_fig(tr, a_min, a_max, fig, ax)
+
+        # Save figure
+        save_figure(path_output, 'Spectrogram', tr, fig, fig_format)
+
+        plt.close(fig)
+        del tr
