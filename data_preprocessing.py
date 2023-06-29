@@ -31,6 +31,7 @@ import argparse
 import yaml
 import shutil
 from utils import read_data_from_folder
+from utils import detect_anomalies, correct_data_anomalies
 
 
 """
@@ -115,6 +116,7 @@ if __name__ == "__main__":
             try:
                 # Read data file
                 st = obspy.read(file, format=format_in, headonly=False)
+                st = correct_data_anomalies(st, 1000000)
             except Exception as e:
                 if verbose:
                     print("Can not read %s (%s: %s)" % (file, type(e).__name__, e))
@@ -169,6 +171,8 @@ if __name__ == "__main__":
             st_day.sort(['starttime'])
             # Merge traces
             st_day.merge(method=0, fill_value=0)
+            # Verify the existence of abnormal data
+            detect_anomalies(st, 1000000)
             # Write data to a file
             path_file = f'{path_output}/{st_day[0].meta.network}_{st_day[0].meta.station}_{st_day[0].meta.location}_' \
                         f'{st_day[0].meta.channel}/'
