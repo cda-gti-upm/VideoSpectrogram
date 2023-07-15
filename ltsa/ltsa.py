@@ -4,6 +4,7 @@ from numpy.fft import rfft
 from scipy.io.wavfile import read as wavread
 import matplotlib.pyplot as plt
 from numbers import Number
+import warnings
 
 class LTSA():
     '''
@@ -37,8 +38,8 @@ class LTSA():
         Dictionary containing names and values of parameters to set
 
         '''
-        for key, val in var_dict.iteritems():
-            vars(self)[key] = val
+        for key, val in var_dict.items():
+            vars(self)[key] = val  # vars(): https://www.geeksforgeeks.org/vars-function-python/
 
         self._set_nvals()
 
@@ -176,7 +177,7 @@ class LTSA():
             idx = np.floor(np.linspace(0, np.size(self.ltsa, 0)-1, h))
             idx = np.int32(idx)
             img = np.zeros((h, np.size(self.ltsa, 1)))
-            for i in xrange(int(np.size(self.ltsa, 1))):
+            for i in range(int(np.size(self.ltsa, 1))):
                 img[:,i] = self.ltsa[idx,i] 
 
         elif resize is None:
@@ -199,7 +200,7 @@ class LTSA():
         '''
         self.compute()
 
-    def compute(self): 
+    def compute(self, ref, amin, top_db): 
         '''
         This method executes the LTSA algorithm. The result is a grayscale
         image (2D numpy array) which is assigned to the self.ltsa attribute. 
@@ -213,16 +214,16 @@ class LTSA():
 
         if self.nfft is None:
             self.nfft = int(self.subdiv_len)
-        self.signal = self.signal[: self.ndivs * self.div_len]  # It does not include the last incomplete interval
-        self.tmax = len(self.signal) / self.fs
+        self.signal = self.signal[-self.ndivs * self.div_len:]  # It does not include the first incomplete interval
+        self.tmax = len(self.signal) / self.fs  # Time length of the signal
         self.ltsa = np.zeros((self.nfft//2, self.ndivs), dtype=np.single)
-        divs = np.reshape(self.signal, (self.ndivs, self.div_len)).T
+        divs = np.reshape(self.signal, (self.ndivs, self.div_len)).T  # Matrix of size: self.div_len x self.ndivs
 
         for i in range(int(self.ndivs)):
             div = divs[:,i]
-            self.ltsa[:,i] = self._calc_spectrum(div)
+            self.ltsa[:,i] = self._calc_spectrum(div, ref, amin, top_db)  #  FFT computation
 
-    def _calc_spectrum(self, div):
+    def _calc_spectrum(self, div, ref, amin, top_db):
         '''
         This function is used by compute() to determine the approximate
         frequency content of one division of audio data. 
@@ -240,12 +241,81 @@ class LTSA():
             nsubdivs += 1
             subdiv = div[lo:hi]
             tr = rfft(subdiv * window, int(self.nfft))  # Compute the one-dimensional discrete Fourier Transform for real input.
-            spectrum += np.abs(tr[:self.nfft//2])
+            spectrum += np.abs(tr[:self.nfft//2])  # Accumulates the abosolute spectrum #
             lo += slip
             hi += slip
 
-        spectrum = np.single(np.log(spectrum / self.nsubdivs))
-        return spectrum
+        power = np.square(spectrum) / self.nsubdivs
+        ref_value = np.abs(ref)
+        power_dB = self.power_to_db(power, ref=ref_value ** 2, amin=amin ** 2, top_db=top_db)
+        #spectrum = np.single(np.log(spectrum / self.nsubdivs))  # Average the log absolute accumulated spectrum
+        return power_dB
+
+    def power_to_db(self, S, ref = 1.0, amin = 1e-10, top_db= 80.0):
+        """Convert a power spectrogram (amplitude squared) to decibel (dB) units
+
+        This computes the scaling ``10 * log10(S / ref)`` in a numerically
+        stable way.
+
+        Parameters
+        ----------
+        S : np.ndarray
+            input power
+
+        ref : scalar
+            The amplitude ``abs(S)`` is scaled relative to ``ref``::
+
+                10 * log10(S / ref)
+
+            Zeros in the output correspond to positions where ``S == ref``.
+
+
+        amin : float > 0 [scalar]
+            minimum threshold for ``abs(S)`` and ``ref``
+
+        top_db : float >= 0 [scalar]
+            threshold the output at ``top_db`` below the peak:
+            ``max(10 * log10(S/ref)) - top_db``
+
+        Returns
+        -------
+        S_db : np.ndarray
+            ``S_db ~= 10 * log10(S) - 10 * log10(ref)``
+        """
+
+
+        S = np.asarray(S)
+
+        if amin <= 0:
+            raise ValueError("amin must be strictly positive")
+
+        if np.issubdtype(S.dtype, np.complexfloating):
+            warnings.warn(
+                "power_to_db was called on complex input so phase "
+                "information will be discarded. To suppress this warning, "
+                "call power_to_db(np.abs(D)**2) instead.",
+                stacklevel=2,
+            )
+            magnitude = np.abs(S)
+        else:
+            magnitude = S
+
+        if callable(ref):
+            # User supplied a function to calculate reference power
+            ref_value = ref(magnitude)
+        else:
+            ref_value = np.abs(ref)
+
+        log_spec: np.ndarray = 10.0 * np.log10(np.maximum(amin, magnitude))
+        log_spec -= 10.0 * np.log10(np.maximum(amin, ref_value))
+
+        if top_db is not None:
+            if top_db < 0:
+                raise ValueError("top_db must be non-negative")
+            log_spec = np.maximum(log_spec, log_spec.max() - top_db)
+
+        return log_spec
+
 
     def scale_to_uint8(self): 
         '''
