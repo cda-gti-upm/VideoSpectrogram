@@ -48,7 +48,7 @@ def read_and_preprocessing(path_data, format_in, starttime, endtime):
 
     return st
 
-def prepare_fig(tr, a_min, a_max, fig, ax):
+def prepare_fig(tr, a_min, a_max, lf, hf, fig, ax):
     print(f'Preparing figure...')
 
     # Decimation
@@ -141,8 +141,9 @@ def prepare_fig(tr, a_min, a_max, fig, ax):
     img = librosa.display.specshow(S_db, cmap='jet', sr=tr.meta.sampling_rate, hop_length=hop_length, x_axis='time', y_axis='linear',
                                    ax=ax[1], vmin=S_min, vmax=S_max, x_coords=time_abs)
     ax[1].set(xlabel="Date",
-              ylabel="Frequency"
+              ylabel="Frequency [Hz]"
               )
+    ax[1].set(ylim=[lf, hf])
     # ax[1].set(xlim=["2005-06-01", "2005-08-31"])
 
     # Define the date format
@@ -238,6 +239,8 @@ if __name__ == "__main__":
         a_min = par['plotting']['a_min']
         S_max = par['plotting']['S_max']
         S_min = par['plotting']['S_min']
+        Low_frequency = par['plotting']['Low_frequency']
+        High_frequency = par['plotting']['High_frequency']
         time_interval_one_row = par['day_plotting']['time_interval_one_row']
         fig_format = par['fig_format']
         verbose = par['verbose']
@@ -275,7 +278,7 @@ if __name__ == "__main__":
             # Prepare figure: spectrograms
             plt.rcParams['font.size'] = 18  # Change font size
             fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(19, 10), dpi=100)
-            fig, ax = prepare_fig(tr, a_min, a_max, fig, ax)
+            fig, ax = prepare_fig(tr, a_min, a_max, Low_frequency, High_frequency, fig, ax)
 
             # Save figure
             save_figure(path_output, 'Spectrogram', tr, fig, fig_format)

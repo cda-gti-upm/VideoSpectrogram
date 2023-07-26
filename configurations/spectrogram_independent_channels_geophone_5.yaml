@@ -32,6 +32,9 @@ plotting:
   # Maximum and minimum power spectral values to represent spectrograms. Use 'range_espectrograms.py' to infer such as values.
   S_max: 130 # 145
   S_min: 75  # 75
+  # Maximum an minimum frequency value to represent spectrograms
+  Low_frequency: 5
+  High_frequency: 125
 
 # Day plotting
 day_plotting:
@@ -39,6 +42,10 @@ day_plotting:
 
 # Format of figure file
 fig_format: svg  # png, eps, pdf
+
+# Image size (resolution) for plottings
+Img_width: 1920
+Img_height: 1080
 
 # Verbosing
 verbose: True
@@ -79,6 +86,9 @@ plotting:
   # Maximum and minimum power spectral values to represent spectrograms. Use 'range_espectrograms.py' to infer such as values.
   S_max: 130 # 145
   S_min: 75  # 75
+  # Maximum an minimum frequency value to represent spectrograms
+  Low_frequency: 5
+  High_frequency: 125
 
 # Day plotting
 day_plotting:
@@ -86,6 +96,10 @@ day_plotting:
 
 # Format of figure file
 fig_format: svg  # png, eps, pdf
+
+# Image size (resolution) for plottings
+Img_width: 1920
+Img_height: 1080
 
 # Verbosing
 verbose: True
@@ -126,6 +140,9 @@ plotting:
   # Maximum and minimum power spectral values to represent spectrograms. Use 'range_espectrograms.py' to infer such as values.
   S_max: 130 # 145
   S_min: 75  # 75
+  # Maximum an minimum frequency value to represent spectrograms
+  Low_frequency: 5
+  High_frequency: 125
 
 # Day plotting
 day_plotting:
@@ -133,6 +150,10 @@ day_plotting:
 
 # Format of figure file
 fig_format: svg  # png, eps, pdf
+
+# Image size (resolution) for plottings
+Img_width: 1920
+Img_height: 1080
 
 # Verbosing
 verbose: True
