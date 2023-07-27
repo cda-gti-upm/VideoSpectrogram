@@ -152,7 +152,6 @@ if __name__ == "__main__":
 
         # Simplify variable names
         path_data = par['paths']['path_data']
-        path_output = par['paths']['path_output']
         starttime = par['date_range']['starttime']
         endtime = par['date_range']['endtime']
         filter_50Hz_f = par['filter']['filter_50Hz_f']
@@ -160,7 +159,6 @@ if __name__ == "__main__":
         a_max = par['plotting']['a_max']
         a_min = par['plotting']['a_min']
         time_interval_one_row = par['day_plotting']['time_interval_one_row']
-        fig_format = par['fig_format']
         verbose = par['verbose']
 
         # Date preprocessing
@@ -184,6 +182,8 @@ if __name__ == "__main__":
         del tr
 
     # Save figure
+    path_output = par_list[0]['paths']['path_output']
+    fig_format = par_list[0]['fig_format']
     save_figure2(path_output, 'Plot', tr_info, fig, fig_format)
 
     plt.close(fig)
