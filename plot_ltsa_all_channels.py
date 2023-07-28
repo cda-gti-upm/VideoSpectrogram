@@ -220,10 +220,10 @@ if __name__ == "__main__":
     """ 
     Process every set of parameters 
     """
-    plt.rcParams['font.size'] = 14  # Change font size
+    plt.rcParams['font.size'] = 10  # Change font size
     dpi = 100
     Img_width = par_list[0]['Img_width']
-    Img_height = par_list[0]['Img_height']
+    Img_height = Img_width #par_list[0]['Img_height']
     figsize = (round(Img_width / dpi), round(Img_height / dpi))
     fig, ax = plt.subplots(nrows=2*len(par_list), ncols=1, sharex=True, figsize=figsize, dpi=dpi)
     tr_info = list()
