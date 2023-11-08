@@ -6,6 +6,7 @@ one.
 
 import os
 import librosa.display
+import matplotlib.dates
 from tqdm import tqdm
 import obspy
 from obspy.core import UTCDateTime
@@ -20,6 +21,12 @@ import argparse
 import yaml
 import pickle
 from scipy.ndimage import uniform_filter1d
+import plotly.express as px
+import pandas as pd
+from screeninfo import get_monitors
+from dash import Dash, dcc, html, Input, Output
+
+app = Dash(__name__)
 
 """
 Functions
@@ -49,14 +56,17 @@ def read_and_preprocessing(path_data, format_in, starttime, endtime):
 
     return tr
 
-def prepare_fig(tr, prefix_name, a_min, a_max, fig, ax):
+def prepare_fig(tr, prefix_name, a_min, a_max):
     print(f'Preparing figure...')
 
     # Decimation
     print(f'Decimation...')
     num_samples = len(tr.data)
-    target_num_samples = 0.8 * fig.get_size_inches()[0] * fig.dpi  # Effective number of samples in the plot
-    # More samples are considered than available in image resolution to allow zoom in vector format
+    n_pixels = []
+    for m in get_monitors():
+        n_pixels.append(m.width)
+
+    target_num_samples = max(n_pixels)
     oversampling_factor = 100
     factor = int(num_samples / (target_num_samples * oversampling_factor))
     if factor > 1:
@@ -71,66 +81,27 @@ def prepare_fig(tr, prefix_name, a_min, a_max, fig, ax):
     """
 
     # Plotting and formatting
-    plt.plot(tr.times(('matplotlib')), tr.data, 'k')
-    ax.set(xlabel="Date",
-           ylabel="Amplitude",
-           title=f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
-                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
-                 f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
-           )
-    #ax.set(xlim=["2005-06-01", "2005-08-31"])
-
-    # Define the date format
-    date_form_major = DateFormatter("%d-%b-%Y")
-    ax.xaxis.set_major_formatter(date_form_major)
-    date_form_minor = DateFormatter("%H")
-    ax.xaxis.set_minor_formatter(date_form_minor)
-    ax.xaxis.set_major_locator(mdates.DayLocator(interval=1))
-    ax.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0,24,4)))
-    #fig.autofmt_xdate()  # Angle date
-
-    # yaxis
-    ax.yaxis.set_minor_locator(AutoMinorLocator())
-
-    # Change ticks
-    ax.tick_params(axis='x', which='major', length=32, width=5, labelsize=18, rotation=0)
-    ax.tick_params(axis='y', which='major', length=18, width=5)
-    ax.tick_params(axis='both', which='minor', length=8, width=3, labelsize=10, rotation=0)
-
-    # Change font size
-    #ax.title.set_fontsize(18)
-    #ax.xaxis.label.set_fontsize(18)
-    #ax.yaxis.label.set_fontsize(18)
-    #map(lambda p: p.set_fontsize(18), ax.get_xticklabels())
-    #map(lambda p: p.set_fontsize(18), ax.get_yticklabels())
+    df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
+    xlabel = "Date"
+    ylabel = "Amplitude"
+    title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
+    f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
+    f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
 
     # Use the parameters [a_min, a_max] if data values are inside that range. If not use the min and max data
     # values.
+
     min_val, max_val = np.percentile(tr.data, [0, 100])
+    y_range = [min_val, max_val]
     if a_min <= min_val and a_max >= max_val:
-        ax.set(ylim=[a_min, a_max])
+        y_range = [a_min, a_max]
 
-    ax.autoscale(enable=True, axis='x', tight=True)
-    plt.tight_layout()
+    fig = px.line(df, x="times", y="data", range_y=y_range, title=title, labels={'times': xlabel, 'data': ylabel})
     return fig
-
-def save_figure(path_output, prefix_name, tr, fig, fig_format):
-    print(f'Saving figure...')
-    plt.figure(fig)
-    os.makedirs(path_output, exist_ok=True)
-    file_name = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
-                f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
-                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.{fig_format}'
-    """
-    file_name_pickle = f'{path_output}/plot_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
-                f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
-                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.pickle'
-    pickle.dump(fig, open(file_name_pickle, 'wb'))
-    """
-    plt.savefig(f'{file_name}')
 
 # Main program
 if __name__ == "__main__":
+
     """
     Process input arguments given by the configuration file.
     The configuration file can have several set of parameters for plotting different geophones and channels.
@@ -177,15 +148,9 @@ if __name__ == "__main__":
         """
         Plot seismic data
         """
-        # Prepare figure
-        plt.rcParams['font.size'] = 18 # Change font size
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(19, 10), dpi=100)
-        fig = prepare_fig(tr, 'Plot', a_min, a_max, fig, ax)
 
-        # Save figure
-        save_figure(path_output, 'Plot', tr, fig, fig_format)
-
-        plt.close(fig)
+        fig = prepare_fig(tr, 'Plot', a_min, a_max)
+        fig.show()
         del tr
 
         """
@@ -196,14 +161,8 @@ if __name__ == "__main__":
         tr_rsam.data = uniform_filter1d(abs(tr_rsam.data), size=n_samples)
 
         # Prepare figure
-        plt.rcParams['font.size'] = 18 # Change font size
-        fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(19, 10), dpi=100)
-        fig = prepare_fig(tr_rsam, 'RSAM', 0, 1000, fig, ax)
-
-        # Save figure
-        save_figure(path_output, 'RSAM', tr_rsam, fig, fig_format)
-
-        plt.close(fig)
+        fig_RSAM = prepare_fig(tr_rsam, 'RSAM', a_min=0, a_max=1000)
+        fig_RSAM.show()
         del tr_rsam
 
 
