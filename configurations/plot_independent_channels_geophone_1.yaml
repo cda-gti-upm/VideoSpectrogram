@@ -5,8 +5,8 @@ paths:
 
 # Date range to plot
 date_range:
-  starttime: null  # Date example: 2022-01-16 23:59:59
-  endtime: null
+  starttime: 2021-11-26  # Date example: 2022-01-16 23:59:59
+  endtime: 2021-11-28
 
 # Filtering
 filter:
