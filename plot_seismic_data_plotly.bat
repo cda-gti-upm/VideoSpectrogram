@@ -1,1 +1,0 @@
-python plot_seismic_data_plotly.py configurations/plot_seismic_data_plotly.yaml
