@@ -57,14 +57,14 @@ def read_and_preprocessing():
     return trace
 
 
-def prepare_fig(trace, start_time, end_time, prefix_name):
+def prepare_fig(stream, start_time, end_time, prefix_name):
     print(f'Preparing figure...')
     print('Updating dates...')
-    tr_dec = trace.slice(start_time, end_time)
+    stream = stream.slice(start_time, end_time)
     # Decimation
     print(f'Decimation...')
-    num_samples = len(tr_dec.data)
-    print(f'{prefix_name} trace has {len(tr_dec.data)} samples...')
+    num_samples = len(stream[0].data)
+    print(f'{prefix_name} trace has {len(stream[0].data)} samples...')
     n_pixels = []
     for m in get_monitors():
         n_pixels.append(m.width)
@@ -74,27 +74,26 @@ def prepare_fig(trace, start_time, end_time, prefix_name):
     oversampling_factor = 10
     factor = int(num_samples / (target_num_samples * oversampling_factor))
     if factor > 1:
-        tr_dec.decimate(factor, no_filter=True)  # No antialiasing filtering because of lack of stability due to large decimation factor
-        print(f'{prefix_name} trace reduced to {len(tr_dec.data)} samples...')
+        stream.decimate(factor, no_filter=True)  # No antialiasing filtering because of lack of stability due to large decimation factor
+        print(f'{prefix_name} trace reduced to {len(stream[0].data)} samples...')
     # Plotting and formatting
-    print(f'Plotting and formating {prefix_name}...')
-    df = pd.DataFrame({'data': tr_dec.data, 'times': tr_dec.times('utcdatetime')})  # check for problems with date format
+    print(f'Plotting and formating...')
+    df = pd.DataFrame({'channel_x': stream[0].data, 'channel_y': stream[1].data,
+                       'channel_z': stream[2].data, 'times': stream[0].times('utcdatetime')})  # check for problems with date format
     xlabel = "Date"
     ylabel = "Amplitude"
-    title = f'{prefix_name} {tr_dec.meta.network}, {tr_dec.meta.station}, {tr_dec.meta.location}, Channel {tr_dec.meta.channel} '
-    f'from {tr_dec.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
-    f'until {tr_dec.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
+    title = f'{prefix_name} {stream[0].meta.network}, {stream[0].meta.station}, {stream[0].meta.location}, Channel {stream[0].meta.channel} '
+    f'from {stream[0].stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
+    f'until {stream[0].stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
 
     # Use the parameters [a_min, a_max] if data values are inside that range. If not use the min and max data
     # values.
 
-    min_val, max_val = np.percentile(tr_dec.data, [0, 100])
+    min_val, max_val = np.percentile(stream[0].data, [0, 100])
     y_range = [min_val, max_val]
     if a_min <= min_val and a_max >= max_val:
         y_range = [a_min, a_max]
-    if prefix_name == 'RSAM':
-        y_range = [0, 10000]
-    fig = px.line(df, x="times", y="data", range_y=y_range, title=title, labels={'times': xlabel, 'data': ylabel})
+    fig = px.line(df, x="times", y=["channel_x", "channel_y", "channel_z"], range_y=y_range, title=title, labels={'times': xlabel, 'channel_x': ylabel})
     return fig
 
 
@@ -136,7 +135,6 @@ for i, par in enumerate(par_list):
     tr_rsam.data = uniform_filter1d(abs(tr_rsam.data), size=n_samples)
 
     st[i] = tr
-    st_rsam[i] = tr_rsam
 
 starttime = st[0].stats.starttime
 endtime = st[0].stats.endtime
@@ -146,16 +144,6 @@ endtime = st[0].stats.endtime
 app = Dash(__name__)
 app.layout = html.Div([
     html.H1("Welcome to the seismic data visualizator", style={'textAlign': 'center'}),
-    html.Div('Select one channel:'),
-    dcc.RadioItems(
-        id='channel_selector',
-        options=[
-            {'label': 'Channel X   ', 'value': 'X'},
-            {'label': 'Channel Y   ', 'value': 'Y'},
-            {'label': 'Channel Z   ', 'value': 'Z'}
-        ],
-        value='X'
-    ),
     html.Div('Select the start and end time (format: yyyy-mm-dd hh:mm:ss):'),
     dcc.Input(
         id='startdate',
@@ -167,36 +155,21 @@ app.layout = html.Div([
         type='text',
         value=endtime.strftime("%Y-%m-%d %H:%M:%S")
     ),
-    dcc.Graph(id='time_plot'),
-    dcc.Graph(id='RSAM')
+    dcc.Graph(id='time_plot')
 ])
 
 
 @app.callback(
     Output('time_plot', 'figure'),
-    Output('RSAM', 'figure'),
-    Input('channel_selector', 'value'),
     Input('startdate', 'value'),
     Input('enddate', 'value')
 )
-def update(channel_selector, startdate, enddate):
+def update(startdate, enddate):
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
-    trace = obspy.Trace()
-    trace_rsam = obspy.Trace()
-    if channel_selector == 'X':
-        trace = st[0]
-        trace_rsam = st_rsam[0]
-    elif channel_selector == 'Y':
-        trace = st[1]
-        trace_rsam = st_rsam[1]
-    else:
-        trace = st[2]
-        trace_rsam = st_rsam[2]
-    fig1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
-    fig2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
-    print('Graphs updated!')
-    return fig1, fig2
+    fig1 = prepare_fig(stream=st, start_time=start_time, end_time=end_time, prefix_name='Plot')
+    print('Graph updated!')
+    return fig1
 
 
 # Main program
