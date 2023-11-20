@@ -25,6 +25,8 @@ import pickle
 """
 Functions
 """
+
+
 def read_and_preprocessing(path_data, format_in, starttime, endtime):
     """
     Read, sort, merge, and filter data

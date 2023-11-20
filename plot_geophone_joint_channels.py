@@ -37,17 +37,17 @@ def read_and_preprocessing():
 
     # Read data
     print(f'Reading data ...')
-    st = read_data_from_folder(path_data, format_in, starttime, endtime)
+    stream = read_data_from_folder(path_data, format_in, starttime, endtime)
 
     # Sort data
     print(f'Sorting data ...')
-    st.sort(['starttime'])
-    print(f'Data spans from {st[0].stats.starttime} until {st[-1].stats.endtime}')
+    stream.sort(['starttime'])
+    print(f'Data spans from {stream[0].stats.starttime} until {stream[-1].stats.endtime}')
 
     # Merge traces
     print(f'Merging data ...')
-    st.merge(method=0, fill_value=0)
-    trace = st[0]
+    stream.merge(method=0, fill_value=0)
+    trace = stream[0]
 
     # Filtering 50 Hz
     if filter_50Hz_f:
@@ -71,7 +71,7 @@ def prepare_fig(stream, start_time, end_time, prefix_name):
 
     target_num_samples = max(n_pixels)
     print(f'Monitor horizontal resolution is {target_num_samples} pixels')
-    oversampling_factor = 10
+    oversampling_factor = 100
     factor = int(num_samples / (target_num_samples * oversampling_factor))
     if factor > 1:
         stream.decimate(factor, no_filter=True)  # No antialiasing filtering because of lack of stability due to large decimation factor
@@ -79,21 +79,15 @@ def prepare_fig(stream, start_time, end_time, prefix_name):
     # Plotting and formatting
     print(f'Plotting and formating...')
     df = pd.DataFrame({'channel_x': stream[0].data, 'channel_y': stream[1].data,
-                       'channel_z': stream[2].data, 'times': stream[0].times('utcdatetime')})  # check for problems with date format
+                       'channel_z': stream[2].data, 'times': stream[0].times('utcdatetime')})
     xlabel = "Date"
     ylabel = "Amplitude"
-    title = f'{prefix_name} {stream[0].meta.network}, {stream[0].meta.station}, {stream[0].meta.location}, Channel {stream[0].meta.channel} '
+    title = f'{prefix_name} {stream[0].meta.network}, {stream[0].meta.station}, {stream[0].meta.location}'
     f'from {stream[0].stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
     f'until {stream[0].stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
 
-    # Use the parameters [a_min, a_max] if data values are inside that range. If not use the min and max data
-    # values.
-
-    min_val, max_val = np.percentile(stream[0].data, [0, 100])
-    y_range = [min_val, max_val]
-    if a_min <= min_val and a_max >= max_val:
-        y_range = [a_min, a_max]
-    fig = px.line(df, x="times", y=["channel_x", "channel_y", "channel_z"], range_y=y_range, title=title, labels={'times': xlabel, 'channel_x': ylabel})
+    fig = px.line(df, x="times", y=["channel_x", "channel_y", "channel_z"],
+                  title=title, labels={'times': xlabel, 'channel_x': ylabel})
     return fig
 
 
