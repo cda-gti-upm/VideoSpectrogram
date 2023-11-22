@@ -24,7 +24,7 @@ from scipy.ndimage import uniform_filter1d
 import plotly.express as px
 import pandas as pd
 from screeninfo import get_monitors
-from dash import Dash, dcc, html, Input, Output, State
+from dash import Dash, dcc, html, Input, Output, State, ctx
 import plotly.graph_objects as go
 import dash
 from datetime import date
@@ -88,16 +88,7 @@ def prepare_fig(trace, start_time, end_time, prefix_name):
     f'from {tr_dec.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
     f'until {tr_dec.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
 
-    # Use the parameters [a_min, a_max] if data values are inside that range. If not use the min and max data
-    # values.
-
-    min_val, max_val = np.percentile(tr_dec.data, [0, 100])
-    y_range = [min_val, max_val]
-    if a_min <= min_val and a_max >= max_val:
-        y_range = [a_min, a_max]
-    if prefix_name == 'RSAM':
-        y_range = [0, 10000]
-    fig = px.line(df, x="times", y="data", range_y=y_range, title=title, labels={'times': xlabel, 'data': ylabel})
+    fig = px.line(df, x="times", y="data", title=title, labels={'times': xlabel, 'data': ylabel})
     return fig
 parser = argparse.ArgumentParser()
 parser.add_argument("conf_path")
@@ -171,6 +162,17 @@ app.layout = html.Div([
         type='text',
         value=endtime.strftime("%Y-%m-%d %H:%M:%S")
     ),
+    html.Div('Select the amplitude range:'),
+    dcc.Input(
+            id='max',
+            type='number',
+            value=float('nan')
+        ),
+    dcc.Input(
+                id='min',
+                type='number',
+                value=float('nan')
+            ),
     dcc.Graph(id='time_plot', figure=fig1),
     html.Pre(id='relayout-data', style=styles['pre']),
     dcc.Graph(id='RSAM', figure=fig2)
@@ -182,20 +184,18 @@ app.layout = html.Div([
 def display_relayout_data(relayoutData):
     return json.dumps(relayoutData, indent=2)
 
-'''
+
 @app.callback(
     Output('time_plot', 'figure'),
     Output('RSAM', 'figure'),
     Input('channel_selector', 'value'),
     Input('startdate', 'value'),
     Input('enddate', 'value'),
-)
-def update_plot(channel_selector, startdate, enddate, fig):
-    print('Updating graphs!')
-    a = fig['xaxis.range[0]']
-    b = fig['xaxis.range[1]']
-    start_time = UTCDateTime(startdate)
-    end_time = UTCDateTime(enddate)
+    Input('time_plot', 'relayoutData'),
+    Input('RSAM', 'relayoutData'),
+    prevent_initial_call=True)
+def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2):
+    print(ctx.triggered_id)
     if channel_selector == 'X':
         trace = st[0]
         trace_rsam = st_rsam[0]
@@ -205,25 +205,49 @@ def update_plot(channel_selector, startdate, enddate, fig):
     else:
         trace = st[2]
         trace_rsam = st_rsam[2]
-    fig_1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
-    fig1.update_layout(uirevision='keeping')
-    fig_2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
-    fig2.update_layout(uirevision='keeping')
+
+    start_time = UTCDateTime(startdate)
+    end_time = UTCDateTime(enddate)
+    if (ctx.triggered_id in ['time_plot', 'RSAM', 'channel_selector']) and ("xaxis.range[0]" in relayoutdata_1):
+        if ctx.triggered_id == 'time_plot':
+            start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+            print(start_time)
+            print(end_time)
+            relayoutdata = relayoutdata_1
+            fig_1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
+            fig_2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
+            try:
+                #fig_2['layout'] = {'xaxis': {'range': [relayoutdata['xaxis.range[0]'], relayoutdata['xaxis.range[1]']]}}
+                fig1.update_layout(uirevision='keeping')
+                fig2.update_layout(uirevision='keeping')
+            except KeyError:
+                print('KEY ERROR')
+        elif ctx.triggered_id == 'RSAM':
+            start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
+            relayoutdata = relayoutdata_2
+            fig_1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
+            fig_2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
+            try:
+                #fig_1['layout'] = {'xaxis': {'range': [relayoutdata['xaxis.range[0]'], relayoutdata['xaxis.range[1]']]}}
+                fig1.update_layout(uirevision='keeping')
+                fig2.update_layout(uirevision='keeping')
+            except KeyError:
+                print('KEY ERROR')
+        else:
+            relayoutdata = relayoutdata_1
+            start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+            fig_1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
+            fig_2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
+
+
+    else:
+        fig_1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
+        fig_2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
 
     return fig_1, fig_2
-'''
-
-@app.callback(Output('RSAM', 'figure'),
-             [Input('time_plot', 'relayoutData')],
-             [State('RSAM', 'figure')],
-              prevent_initial_call=True)
-def graph_event(select_data,  fig):
-    try:
-        fig['layout'] = {'xaxis':{'range':[select_data['xaxis.range[0]'],select_data['xaxis.range[1]']]}}
-        print(select_data['xaxis.range[0]'])
-    except KeyError:
-        fig['layout'] = {'xaxis':{'range':'[zoomed out value]'}}
-    return fig
 
 
 # Main program
