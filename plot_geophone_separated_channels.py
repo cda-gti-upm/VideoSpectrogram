@@ -24,7 +24,9 @@ from scipy.ndimage import uniform_filter1d
 import plotly.express as px
 import pandas as pd
 from screeninfo import get_monitors
-from dash import Dash, dcc, html, Input, Output, callback
+from dash import Dash, dcc, html, Input, Output, State
+import plotly.graph_objects as go
+import dash
 from datetime import date
 import json
 
@@ -108,6 +110,8 @@ with open(args.conf_path, mode="rb") as file:
 st = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
 st_rsam = st.copy()
 
+styles = {'pre': {'border': 'thin lightgrey solid','overflowX': 'scroll'}}
+
 for i, par in enumerate(par_list):
     print(f'Processing parameter set {i + 1} out of {len(par_list)}')
     path_data = par['paths']['path_data']
@@ -139,6 +143,8 @@ for i, par in enumerate(par_list):
 starttime = st[0].stats.starttime
 endtime = st[0].stats.endtime
 
+fig1 = prepare_fig(st[0], starttime, endtime, 'Plot')
+fig2 = prepare_fig(st_rsam[0], starttime, endtime, 'RSAM')
 # Creating app layout:
 
 app = Dash(__name__)
@@ -165,21 +171,29 @@ app.layout = html.Div([
         type='text',
         value=endtime.strftime("%Y-%m-%d %H:%M:%S")
     ),
-    dcc.Graph(id='time_plot'),
-    html.Pre(id='relayout_data'),
-    dcc.Graph(id='RSAM')
+    dcc.Graph(id='time_plot', figure=fig1),
+    html.Pre(id='relayout-data', style=styles['pre']),
+    dcc.Graph(id='RSAM', figure=fig2)
 ])
 
 
+@app.callback(Output('relayout-data', 'children'),
+              [Input('graph', 'relayoutData')])
+def display_relayout_data(relayoutData):
+    return json.dumps(relayoutData, indent=2)
 
+'''
 @app.callback(
     Output('time_plot', 'figure'),
     Output('RSAM', 'figure'),
     Input('channel_selector', 'value'),
     Input('startdate', 'value'),
-    Input('enddate', 'value')
+    Input('enddate', 'value'),
 )
-def update_plot(channel_selector, startdate, enddate):
+def update_plot(channel_selector, startdate, enddate, fig):
+    print('Updating graphs!')
+    a = fig['xaxis.range[0]']
+    b = fig['xaxis.range[1]']
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
     if channel_selector == 'X':
@@ -191,24 +205,25 @@ def update_plot(channel_selector, startdate, enddate):
     else:
         trace = st[2]
         trace_rsam = st_rsam[2]
-    fig1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
+    fig_1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
     fig1.update_layout(uirevision='keeping')
-    fig2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
+    fig_2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
     fig2.update_layout(uirevision='keeping')
-    print('Graphs updated!')
-    return fig1, fig2
 
+    return fig_1, fig_2
+'''
 
-@app.callback(Output('relayout-data', 'children'),
-              [Input('time_plot', 'relayoutData')])
-def display_relayout_data(relayoutData):
-    return json.dumps(relayoutData, indent=2)
-
-
-@app.callback([Input('time_plot', 'relayoutData')]) # this triggers the event)
-def graph_event(select_data):
-    print(select_data['xaxis.range[0]'])
-    print(select_data['xaxis.range[1]'])
+@app.callback(Output('RSAM', 'figure'),
+             [Input('time_plot', 'relayoutData')],
+             [State('RSAM', 'figure')],
+              prevent_initial_call=True)
+def graph_event(select_data,  fig):
+    try:
+        fig['layout'] = {'xaxis':{'range':[select_data['xaxis.range[0]'],select_data['xaxis.range[1]']]}}
+        print(select_data['xaxis.range[0]'])
+    except KeyError:
+        fig['layout'] = {'xaxis':{'range':'[zoomed out value]'}}
+    return fig
 
 
 # Main program
