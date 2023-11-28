@@ -39,48 +39,48 @@ Functions
 def read_and_preprocessing(path, in_format, start, end):
 
     # Read data
-    print(f'Reading data ...')
+    #print(f'Reading data ...')
     stream = read_data_from_folder(path, in_format, start, end)
 
     # Sort data
-    print(f'Sorting data ...')
+    #print(f'Sorting data ...')
     stream.sort(['starttime'])
-    print(f'Data spans from {stream[0].stats.starttime} until {stream[-1].stats.endtime}')
+    #print(f'Data spans from {stream[0].stats.starttime} until {stream[-1].stats.endtime}')
 
     # Merge traces
-    print(f'Merging data ...')
+    #print(f'Merging data ...')
     stream.merge(method=0, fill_value=0)
     trace = stream[0]
 
     # Filtering 50 Hz
     if filter_50Hz_f:
-        print(f'Filtering 50 Hz signal ...')
+        #print(f'Filtering 50 Hz signal ...')
         trace.data = obspy.signal.filter.bandstop(trace.data, 49, 51, trace.meta.sampling_rate, corners=8, zerophase=True)
 
     return trace
 
 
-def prepare_fig(trace, start_time, end_time, prefix_name):
-    print(f'Preparing figure...')
-    print('Updating dates...')
-    tr_dec = trace.slice(start_time, end_time)
+def prepare_fig(trace, prefix_name):
+    #print(f'Preparing figure...')
+    #print('Updating dates...')
+    tr_dec = trace
     # Decimation
-    print(f'Decimation...')
+    #print(f'Decimation...')
     num_samples = len(tr_dec.data)
-    print(f'{prefix_name} trace has {len(tr_dec.data)} samples...')
+    #print(f'{prefix_name} trace has {len(tr_dec.data)} samples...')
     n_pixels = []
     for m in get_monitors():
         n_pixels.append(m.width)
 
     target_num_samples = max(n_pixels)
-    print(f'Monitor horizontal resolution is {target_num_samples} pixels')
+    #print(f'Monitor horizontal resolution is {target_num_samples} pixels')
     oversampling_factor = 25
     factor = int(num_samples / (target_num_samples * oversampling_factor))
     if factor > 1:
         tr_dec.decimate(factor, no_filter=True)  # No antialiasing filtering because of lack of stability due to large decimation factor
         print(f'{prefix_name} trace reduced to {len(tr_dec.data)} samples...')
     # Plotting and formatting
-    print(f'Plotting and formating {prefix_name}...')
+    #print(f'Plotting and formating {prefix_name}...')
     df = pd.DataFrame({'data': tr_dec.data, 'times': tr_dec.times('utcdatetime')})  # check for problems with date format
     xlabel = "Date"
     ylabel = "Amplitude"
@@ -89,7 +89,10 @@ def prepare_fig(trace, start_time, end_time, prefix_name):
     f'until {tr_dec.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
 
     fig = px.line(df, x="times", y="data", title=title, labels={'times': xlabel, 'data': ylabel})
+
     return fig
+
+
 parser = argparse.ArgumentParser()
 parser.add_argument("conf_path")
 args = parser.parse_args()
@@ -133,9 +136,13 @@ for i, par in enumerate(par_list):
 
 starttime = st[0].stats.starttime
 endtime = st[0].stats.endtime
+slice = st[0].slice(starttime, endtime)
+print(slice.times)
 
-fig1 = prepare_fig(st[0], starttime, endtime, 'Plot')
-fig2 = prepare_fig(st_rsam[0], starttime, endtime, 'RSAM')
+slice_rsam = st_rsam[0].slice(starttime, endtime)
+print(slice_rsam.times)
+fig1 = prepare_fig(slice, 'Plot')
+fig2 = prepare_fig(slice_rsam, 'RSAM')
 # Creating app layout:
 
 app = Dash(__name__)
@@ -162,6 +169,7 @@ app.layout = html.Div([
         type='text',
         value=endtime.strftime("%Y-%m-%d %H:%M:%S")
     ),
+    dcc.Checklist(id='auto', options=['autorange'], value=['autorange']),
     html.Div('Select the amplitude range:'),
     dcc.Input(
             id='max',
@@ -174,13 +182,32 @@ app.layout = html.Div([
                 value=float('nan')
             ),
     dcc.Graph(id='time_plot', figure=fig1),
-    html.Pre(id='relayout-data', style=styles['pre']),
-    dcc.Graph(id='RSAM', figure=fig2)
+    html.Pre(id='relayout-data-1', style=styles['pre']),
+    dcc.Checklist(id='auto_RSAM', options=['autorange'], value=['autorange']),
+    html.Div('Select the amplitude range:'),
+    dcc.Input(
+        id='max_RSAM',
+        type='number',
+        value=float('nan')
+    ),
+    dcc.Input(
+        id='min_RSAM',
+        type='number',
+        value=float('nan')
+    ),
+    dcc.Graph(id='RSAM', figure=fig2),
+    html.Pre(id='relayout-data-2', style=styles['pre'])
 ])
 
 
-@app.callback(Output('relayout-data', 'children'),
-              [Input('graph', 'relayoutData')])
+@app.callback(Output('relayout-data-1', 'children'),
+              [Input('time_plot', 'relayoutData')])
+def display_relayout_data(relayoutData):
+    return json.dumps(relayoutData, indent=2)
+
+
+@app.callback(Output('relayout-data-2', 'children'),
+              [Input('RSAM', 'relayoutData')])
 def display_relayout_data(relayoutData):
     return json.dumps(relayoutData, indent=2)
 
@@ -193,9 +220,18 @@ def display_relayout_data(relayoutData):
     Input('enddate', 'value'),
     Input('time_plot', 'relayoutData'),
     Input('RSAM', 'relayoutData'),
+    Input('max', 'value'),
+    Input('min', 'value'),
+    Input('max_RSAM', 'value'),
+    Input('min_RSAM', 'value'),
+    Input('auto', 'value'),
+    Input('auto_RSAM', 'value'),
+    State('time_plot', 'figure'),
+    State('RSAM', 'figure'),
     prevent_initial_call=True)
-def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2):
-    print(ctx.triggered_id)
+def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max, min, max_RSAM, min_RSAM, auto, auto_RSAM, fig_1, fig_2):
+    print(f'EL EVENTO DE CALLBACK ES: {ctx.triggered_prop_ids}')
+    print(auto)
     if channel_selector == 'X':
         trace = st[0]
         trace_rsam = st_rsam[0]
@@ -205,47 +241,43 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
     else:
         trace = st[2]
         trace_rsam = st_rsam[2]
-
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
-    if (ctx.triggered_id in ['time_plot', 'RSAM', 'channel_selector']) and ("xaxis.range[0]" in relayoutdata_1):
-        if ctx.triggered_id == 'time_plot':
+
+    if ctx.triggered_id == 'time_plot' or ctx.triggered_id == 'channel_selector':
+        if "xaxis.range[0]" in relayoutdata_1:
             start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
-            print(start_time)
-            print(end_time)
-            relayoutdata = relayoutdata_1
-            fig_1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
-            fig_2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
-            try:
-                #fig_2['layout'] = {'xaxis': {'range': [relayoutdata['xaxis.range[0]'], relayoutdata['xaxis.range[1]']]}}
-                fig1.update_layout(uirevision='keeping')
-                fig2.update_layout(uirevision='keeping')
-            except KeyError:
-                print('KEY ERROR')
-        elif ctx.triggered_id == 'RSAM':
+
+
+    if ctx.triggered_id == 'RSAM' or ctx.triggered_id == 'channel_selector':
+        if "xaxis.range[0]" in relayoutdata_2:
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
-            relayoutdata = relayoutdata_2
-            fig_1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
-            fig_2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
-            try:
-                #fig_1['layout'] = {'xaxis': {'range': [relayoutdata['xaxis.range[0]'], relayoutdata['xaxis.range[1]']]}}
-                fig1.update_layout(uirevision='keeping')
-                fig2.update_layout(uirevision='keeping')
-            except KeyError:
-                print('KEY ERROR')
+
+    slice = trace.slice(start_time, end_time)
+    slice_rsam = trace_rsam.slice(start_time, end_time)
+
+    if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
+        if auto == ['autorange']:
+            fig_1['layout'] = {"yaxis.autorange": True}
         else:
-            relayoutdata = relayoutdata_1
-            start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
-            end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
-            fig_1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
-            fig_2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
-
-
+            if min == float('nan'):
+                min = slice.data.min() - 1000
+            if max == float('nan'):
+                max = slice.data.max() + 1000
+            fig_1['layout'] = {'yaxis': {'range': [max, min]}}
+        if auto_RSAM == ['autorange']:
+            fig_2['layout'] = {"yaxis.autorange": True}
+        else:
+            if min_RSAM == float('nan'):
+                min_RSAM = slice_rsam.data.min() - 1000
+            if max_RSAM == float('nan'):
+                max_RSAM = slice_rsam.data.max() + 1000
+            fig_2['layout'] = {'yaxis': {'range': [max_RSAM, min_RSAM]}}
     else:
-        fig_1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, prefix_name='Plot')
-        fig_2 = prepare_fig(trace=trace_rsam, start_time=start_time, end_time=end_time, prefix_name='RSAM')
+        fig_1 = prepare_fig(trace=slice, prefix_name='Plot')
+        fig_2 = prepare_fig(trace=slice_rsam, prefix_name='RSAM')
 
     return fig_1, fig_2
 
