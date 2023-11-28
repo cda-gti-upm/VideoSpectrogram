@@ -249,7 +249,7 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
             start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
 
-
+###
     if ctx.triggered_id == 'RSAM' or ctx.triggered_id == 'channel_selector':
         if "xaxis.range[0]" in relayoutdata_2:
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
