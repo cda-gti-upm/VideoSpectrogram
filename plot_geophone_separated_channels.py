@@ -60,6 +60,13 @@ def read_and_preprocessing(path, in_format, start, end):
     return trace
 
 
+def generate_title(tr, prefix_name):
+    title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
+    f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
+    f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
+    return title
+
+
 def prepare_fig(trace, prefix_name):
     #print(f'Preparing figure...')
     #print('Updating dates...')
@@ -84,13 +91,23 @@ def prepare_fig(trace, prefix_name):
     df = pd.DataFrame({'data': tr_dec.data, 'times': tr_dec.times('utcdatetime')})  # check for problems with date format
     xlabel = "Date"
     ylabel = "Amplitude"
-    title = f'{prefix_name} {tr_dec.meta.network}, {tr_dec.meta.station}, {tr_dec.meta.location}, Channel {tr_dec.meta.channel} '
-    f'from {tr_dec.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
-    f'until {tr_dec.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
+    title = generate_title(tr_dec, prefix_name)
 
     fig = px.line(df, x="times", y="data", title=title, labels={'times': xlabel, 'data': ylabel})
 
     return fig
+
+
+def update_layout(min_y, max_y, traza, auto_y, title):
+    if auto_y == ['autorange']:
+        layout = {"yaxis.autorange": True, 'title': title}
+    else:
+        if min_y is None:
+            min_y = traza.data.min() - 1000
+        if max_y is None:
+            max_y = traza.data.max() + 1000
+        layout = {'yaxis': {'range': [min_y, max_y], 'title': title}}
+    return layout
 
 
 parser = argparse.ArgumentParser()
@@ -104,7 +121,7 @@ with open(args.conf_path, mode="rb") as file:
 st = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
 st_rsam = st.copy()
 
-styles = {'pre': {'border': 'thin lightgrey solid','overflowX': 'scroll'}}
+styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
 
 for i, par in enumerate(par_list):
     print(f'Processing parameter set {i + 1} out of {len(par_list)}')
@@ -136,81 +153,87 @@ for i, par in enumerate(par_list):
 
 starttime = st[0].stats.starttime
 endtime = st[0].stats.endtime
-slice = st[0].slice(starttime, endtime)
-print(slice.times)
-
-slice_rsam = st_rsam[0].slice(starttime, endtime)
-print(slice_rsam.times)
-fig1 = prepare_fig(slice, 'Plot')
-fig2 = prepare_fig(slice_rsam, 'RSAM')
+time_tr = st[0].slice(starttime, endtime)
+rsam_tr = st_rsam[0].slice(starttime, endtime)
+fig1 = prepare_fig(time_tr, 'Plot')
+fig2 = prepare_fig(rsam_tr, 'RSAM')
 # Creating app layout:
 
 app = Dash(__name__)
 app.layout = html.Div([
-    html.H1("Welcome to the seismic data visualizator", style={'textAlign': 'center'}),
-    html.Div('Select one channel:'),
-    dcc.RadioItems(
-        id='channel_selector',
-        options=[
-            {'label': 'Channel X   ', 'value': 'X'},
-            {'label': 'Channel Y   ', 'value': 'Y'},
-            {'label': 'Channel Z   ', 'value': 'Z'}
-        ],
-        value='X'
+    html.Div(
+        ['Select one channel: ',
+         dcc.RadioItems(
+            id='channel_selector',
+            options=[
+                {'label': 'Channel X   ', 'value': 'X'},
+                {'label': 'Channel Y   ', 'value': 'Y'},
+                {'label': 'Channel Z   ', 'value': 'Z'}
+            ],
+            value='X',
+            style={'display': 'inline-block'})],
+
+        style={'textAlign': 'center'}
     ),
-    html.Div('Select the start and end time (format: yyyy-mm-dd hh:mm:ss):'),
-    dcc.Input(
-        id='startdate',
-        type='text',
-        value=starttime.strftime("%Y-%m-%d %H:%M:%S")
-    ),
-    dcc.Input(
-        id='enddate',
-        type='text',
-        value=endtime.strftime("%Y-%m-%d %H:%M:%S")
+
+    html.Div(
+        ['Select the start and end time (format: yyyy-mm-dd hh:mm:ss): ',
+         dcc.Input(
+             id='startdate',
+             type='text',
+             value=starttime.strftime("%Y-%m-%d %H:%M:%S"),
+             style={'display': 'inline-block'}
+         ),
+         dcc.Input(
+             id='enddate',
+             type='text',
+             value=endtime.strftime("%Y-%m-%d %H:%M:%S"),
+             style={'display': 'inline-block'})],
+
+        style={'textAlign': 'center'}
     ),
     dcc.Checklist(id='auto', options=['autorange'], value=['autorange']),
-    html.Div('Select the amplitude range:'),
+    html.Div('Select the amplitude range (min to max):'),
     dcc.Input(
-            id='max',
+            id='min',
             type='number',
-            value=float('nan')
+            value=None
         ),
     dcc.Input(
-                id='min',
+                id='max',
                 type='number',
-                value=float('nan')
+                value=None
             ),
     dcc.Graph(id='time_plot', figure=fig1),
-    html.Pre(id='relayout-data-1', style=styles['pre']),
+    #html.Pre(id='relayout-data-1', style=styles['pre']),
     dcc.Checklist(id='auto_RSAM', options=['autorange'], value=['autorange']),
-    html.Div('Select the amplitude range:'),
-    dcc.Input(
-        id='max_RSAM',
-        type='number',
-        value=float('nan')
-    ),
+    html.Div('Select the amplitude range (min to max):'),
     dcc.Input(
         id='min_RSAM',
         type='number',
-        value=float('nan')
+        value=None
+    ),
+    dcc.Input(
+        id='max_RSAM',
+        type='number',
+        value=None
     ),
     dcc.Graph(id='RSAM', figure=fig2),
-    html.Pre(id='relayout-data-2', style=styles['pre'])
+    #html.Pre(id='relayout-data-2', style=styles['pre'])
 ])
 
-
+'''
 @app.callback(Output('relayout-data-1', 'children'),
               [Input('time_plot', 'relayoutData')])
-def display_relayout_data(relayoutData):
-    return json.dumps(relayoutData, indent=2)
+def display_relayout_data(relayoutdata):
+    return json.dumps(relayoutdata, indent=2)
 
 
 @app.callback(Output('relayout-data-2', 'children'),
               [Input('RSAM', 'relayoutData')])
-def display_relayout_data(relayoutData):
-    return json.dumps(relayoutData, indent=2)
-
+def display_relayout_data(relayoutdata):
+    return json.dumps(relayoutdata, indent=2)
+'''
 
 @app.callback(
     Output('time_plot', 'figure'),
@@ -229,9 +252,8 @@ def display_relayout_data(relayoutData):
     State('time_plot', 'figure'),
     State('RSAM', 'figure'),
     prevent_initial_call=True)
-def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max, min, max_RSAM, min_RSAM, auto, auto_RSAM, fig_1, fig_2):
-    print(f'EL EVENTO DE CALLBACK ES: {ctx.triggered_prop_ids}')
-    print(auto)
+def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam, min_y_rsam, auto_y, auto_y_rsam, fig_1, fig_2):
+
     if channel_selector == 'X':
         trace = st[0]
         trace_rsam = st_rsam[0]
@@ -249,35 +271,28 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
             start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
 
-###
     if ctx.triggered_id == 'RSAM' or ctx.triggered_id == 'channel_selector':
         if "xaxis.range[0]" in relayoutdata_2:
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
 
-    slice = trace.slice(start_time, end_time)
-    slice_rsam = trace_rsam.slice(start_time, end_time)
+    time_tr = trace.slice(start_time, end_time)
+    rsam_tr = trace_rsam.slice(start_time, end_time)
+    title = generate_title(time_tr, 'Plot')
+    title_rsam = generate_title(time_tr, 'RSAM')
 
     if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
-        if auto == ['autorange']:
-            fig_1['layout'] = {"yaxis.autorange": True}
-        else:
-            if min == float('nan'):
-                min = slice.data.min() - 1000
-            if max == float('nan'):
-                max = slice.data.max() + 1000
-            fig_1['layout'] = {'yaxis': {'range': [max, min]}}
-        if auto_RSAM == ['autorange']:
-            fig_2['layout'] = {"yaxis.autorange": True}
-        else:
-            if min_RSAM == float('nan'):
-                min_RSAM = slice_rsam.data.min() - 1000
-            if max_RSAM == float('nan'):
-                max_RSAM = slice_rsam.data.max() + 1000
-            fig_2['layout'] = {'yaxis': {'range': [max_RSAM, min_RSAM]}}
+        layout = update_layout(min_y, max_y, time_tr, auto_y, title)
+        fig_1['layout'] = layout
+        layout_rsam = update_layout(min_y_rsam, max_y_rsam, rsam_tr, auto_y_rsam, title_rsam)
+        fig_2['layout'] = layout_rsam
     else:
-        fig_1 = prepare_fig(trace=slice, prefix_name='Plot')
-        fig_2 = prepare_fig(trace=slice_rsam, prefix_name='RSAM')
+        fig_1 = prepare_fig(trace=time_tr, prefix_name='Plot')
+        fig_2 = prepare_fig(trace=rsam_tr, prefix_name='RSAM')
+        layout = update_layout(min_y, max_y, time_tr, auto_y, title)
+        fig_1['layout'] = layout
+        layout_rsam = update_layout(min_y_rsam, max_y_rsam, rsam_tr, auto_y_rsam, title_rsam)
+        fig_2['layout'] = layout_rsam
 
     return fig_1, fig_2
 
