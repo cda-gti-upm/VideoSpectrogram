@@ -4,31 +4,17 @@ Read datafiles of given locations (geophones) and channels and generate one inde
 one.
 """
 
-import os
-import librosa.display
-import matplotlib.dates
-from tqdm import tqdm
 import obspy
 from obspy.core import UTCDateTime
 import obspy.signal.filter
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from matplotlib.dates import DateFormatter
-from matplotlib.ticker import (MultipleLocator, AutoMinorLocator, AutoLocator, MaxNLocator)
 from utils import read_data_from_folder
-import numpy as np
 import argparse
 import yaml
-import pickle
 from scipy.ndimage import uniform_filter1d
 import plotly.express as px
 import pandas as pd
 from screeninfo import get_monitors
 from dash import Dash, dcc, html, Input, Output, State, ctx
-import plotly.graph_objects as go
-import dash
-from datetime import date
-import json
 
 
 """
@@ -39,22 +25,22 @@ Functions
 def read_and_preprocessing(path, in_format, start, end):
 
     # Read data
-    #print(f'Reading data ...')
+    print(f'Reading data ...')
     stream = read_data_from_folder(path, in_format, start, end)
 
     # Sort data
-    #print(f'Sorting data ...')
+    print(f'Sorting data ...')
     stream.sort(['starttime'])
-    #print(f'Data spans from {stream[0].stats.starttime} until {stream[-1].stats.endtime}')
+    print(f'Data spans from {stream[0].stats.starttime} until {stream[-1].stats.endtime}')
 
     # Merge traces
-    #print(f'Merging data ...')
+    print(f'Merging data ...')
     stream.merge(method=0, fill_value=0)
     trace = stream[0]
 
     # Filtering 50 Hz
     if filter_50Hz_f:
-        #print(f'Filtering 50 Hz signal ...')
+        print(f'Filtering 50 Hz signal ...')
         trace.data = obspy.signal.filter.bandstop(trace.data, 49, 51, trace.meta.sampling_rate, corners=8, zerophase=True)
 
     return trace
@@ -67,46 +53,45 @@ def generate_title(tr, prefix_name):
     return title
 
 
-def prepare_fig(trace, prefix_name):
-    #print(f'Preparing figure...')
-    #print('Updating dates...')
-    tr_dec = trace
+def prepare_fig(tr, prefix_name):
+    print(f'Preparing figure...')
+    print('Updating dates...')
     # Decimation
-    #print(f'Decimation...')
-    num_samples = len(tr_dec.data)
-    #print(f'{prefix_name} trace has {len(tr_dec.data)} samples...')
+    print(f'Decimation...')
+    num_samples = len(tr.data)
+    print(f'{prefix_name} trace has {len(tr.data)} samples...')
     n_pixels = []
     for m in get_monitors():
         n_pixels.append(m.width)
 
     target_num_samples = max(n_pixels)
-    #print(f'Monitor horizontal resolution is {target_num_samples} pixels')
+    print(f'Monitor horizontal resolution is {target_num_samples} pixels')
     oversampling_factor = 25
     factor = int(num_samples / (target_num_samples * oversampling_factor))
     if factor > 1:
-        tr_dec.decimate(factor, no_filter=True)  # No antialiasing filtering because of lack of stability due to large decimation factor
-        print(f'{prefix_name} trace reduced to {len(tr_dec.data)} samples...')
+        tr.decimate(factor, no_filter=True)
+        print(f'{prefix_name} trace reduced to {len(tr.data)} samples...')
     # Plotting and formatting
-    #print(f'Plotting and formating {prefix_name}...')
-    df = pd.DataFrame({'data': tr_dec.data, 'times': tr_dec.times('utcdatetime')})  # check for problems with date format
+    print(f'Plotting and formating {prefix_name}...')
+    df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
     xlabel = "Date"
     ylabel = "Amplitude"
-    title = generate_title(tr_dec, prefix_name)
+    title = generate_title(tr, prefix_name)
 
-    fig = px.line(df, x="times", y="data", title=title, labels={'times': xlabel, 'data': ylabel})
-
+    fig = px.line(df, x="times", y="data", labels={'times': xlabel, 'data': ylabel})
+    fig['layout'] = {'title': {'text': title, 'x': 0.5}}
     return fig
 
 
 def update_layout(min_y, max_y, traza, auto_y, title):
     if auto_y == ['autorange']:
-        layout = {"yaxis.autorange": True, 'title': title}
+        layout = {"yaxis.autorange": True, 'title': {'text': title, 'x': 0.5}}
     else:
         if min_y is None:
             min_y = traza.data.min() - 1000
         if max_y is None:
             max_y = traza.data.max() + 1000
-        layout = {'yaxis': {'range': [min_y, max_y], 'title': title}}
+        layout = {'yaxis': {'range': [min_y, max_y]}, 'title': {'text': title, 'x': 0.5}}
     return layout
 
 
@@ -118,45 +103,42 @@ with open(args.conf_path, mode="rb") as file:
     for par in yaml.safe_load_all(file):
         par_list.append(par)
 
-st = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
-st_rsam = st.copy()
+ST = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
+ST_RSAM = ST.copy()
 
 styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
+channels = ['X', 'Y', 'Z']
 
-for i, par in enumerate(par_list):
-    print(f'Processing parameter set {i + 1} out of {len(par_list)}')
-    path_data = par['paths']['path_data']
-    path_output = par['paths']['path_output']
-    starttime = par['date_range']['starttime']
-    endtime = par['date_range']['endtime']
-    filter_50Hz_f = par['filter']['filter_50Hz_f']
-    format_in = par['data_format']['format_in']
-    a_max = par['plotting']['a_max']
-    a_min = par['plotting']['a_min']
-    time_interval_one_row = par['day_plotting']['time_interval_one_row']
-    fig_format = par['fig_format']
-    verbose = par['verbose']
-
-    if starttime:
-        starttime = UTCDateTime(starttime)
-    if endtime:
-        endtime = UTCDateTime(endtime)
-
-    tr = read_and_preprocessing(path_data, format_in, starttime, endtime)
+path_data = par['paths']['path_data']
+starttime = par['date_range']['starttime']
+endtime = par['date_range']['endtime']
+filter_50Hz_f = par['filter']['filter_50Hz_f']
+format_in = par['data_format']['format_in']
+if starttime:
+    starttime = UTCDateTime(starttime)
+if endtime:
+    endtime = UTCDateTime(endtime)
+for i in range(0, 3):
+    data_path = path_data + channels[i]
+    TR = read_and_preprocessing(data_path, format_in, starttime, endtime)
     # Computes RSAM
-    tr_rsam = tr.copy()
-    n_samples = int(tr_rsam.meta.sampling_rate * 60 * 10)  # Amount to 10 minutes
-    tr_rsam.data = uniform_filter1d(abs(tr_rsam.data), size=n_samples)
+    TR_RSAM = TR.copy()
+    n_samples = int(TR_RSAM.meta.sampling_rate * 60 * 10)  # Amount to 10 minutes
+    TR_RSAM.data = uniform_filter1d(abs(TR_RSAM.data), size=n_samples)
 
-    st[i] = tr
-    st_rsam[i] = tr_rsam
+    ST[i] = TR
+    ST_RSAM[i] = TR_RSAM
 
-starttime = st[0].stats.starttime
-endtime = st[0].stats.endtime
-time_tr = st[0].slice(starttime, endtime)
-rsam_tr = st_rsam[0].slice(starttime, endtime)
-fig1 = prepare_fig(time_tr, 'Plot')
-fig2 = prepare_fig(rsam_tr, 'RSAM')
+del TR
+del TR_RSAM
+starttime = ST[0].stats.starttime
+endtime = ST[0].stats.endtime
+TIME_TR = ST[0].slice(starttime, endtime)
+RSAM_TR = ST_RSAM[0].slice(starttime, endtime)
+fig1 = prepare_fig(TIME_TR, 'Plot')
+fig2 = prepare_fig(RSAM_TR, 'RSAM')
+del TIME_TR
+del RSAM_TR
 # Creating app layout:
 
 app = Dash(__name__)
@@ -235,6 +217,7 @@ def display_relayout_data(relayoutdata):
     return json.dumps(relayoutdata, indent=2)
 '''
 
+
 @app.callback(
     Output('time_plot', 'figure'),
     Output('RSAM', 'figure'),
@@ -252,26 +235,27 @@ def display_relayout_data(relayoutdata):
     State('time_plot', 'figure'),
     State('RSAM', 'figure'),
     prevent_initial_call=True)
-def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam, min_y_rsam, auto_y, auto_y_rsam, fig_1, fig_2):
-
+def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
+                min_y_rsam, auto_y, auto_y_rsam, fig_1, fig_2):
+    print(ctx.triggered_id)
     if channel_selector == 'X':
-        trace = st[0]
-        trace_rsam = st_rsam[0]
+        trace = ST[0]
+        trace_rsam = ST_RSAM[0]
     elif channel_selector == 'Y':
-        trace = st[1]
-        trace_rsam = st_rsam[1]
+        trace = ST[1]
+        trace_rsam = ST_RSAM[1]
     else:
-        trace = st[2]
-        trace_rsam = st_rsam[2]
+        trace = ST[2]
+        trace_rsam = ST_RSAM[2]
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
 
-    if ctx.triggered_id == 'time_plot' or ctx.triggered_id == 'channel_selector':
+    if ctx.triggered_id in ['time_plot', 'channel_selector']:
         if "xaxis.range[0]" in relayoutdata_1:
             start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
 
-    if ctx.triggered_id == 'RSAM' or ctx.triggered_id == 'channel_selector':
+    if ctx.triggered_id in ['RSAM', 'channel_selector']:
         if "xaxis.range[0]" in relayoutdata_2:
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
@@ -286,13 +270,16 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
         fig_1['layout'] = layout
         layout_rsam = update_layout(min_y_rsam, max_y_rsam, rsam_tr, auto_y_rsam, title_rsam)
         fig_2['layout'] = layout_rsam
+
     else:
-        fig_1 = prepare_fig(trace=time_tr, prefix_name='Plot')
-        fig_2 = prepare_fig(trace=rsam_tr, prefix_name='RSAM')
+        fig_1 = prepare_fig(tr=time_tr, prefix_name='Plot')
+        fig_2 = prepare_fig(tr=rsam_tr, prefix_name='RSAM')
         layout = update_layout(min_y, max_y, time_tr, auto_y, title)
         fig_1['layout'] = layout
         layout_rsam = update_layout(min_y_rsam, max_y_rsam, rsam_tr, auto_y_rsam, title_rsam)
         fig_2['layout'] = layout_rsam
+        fig_1['layout']['uirevision'] = 'keep'
+        fig_2['layout']['uirevision'] = 'keep'
 
     return fig_1, fig_2
 
