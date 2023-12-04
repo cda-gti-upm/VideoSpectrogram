@@ -78,20 +78,19 @@ def prepare_fig(tr, prefix_name):
     ylabel = "Amplitude"
     title = generate_title(tr, prefix_name)
 
-    fig = px.line(df, x="times", y="data", labels={'times': xlabel, 'data': ylabel})
-    fig['layout'] = {'title': {'text': title, 'x': 0.5}}
+    fig = px.line(df, x="times", y="data", title='', labels={'times': xlabel, 'data': ylabel})
+    fig['layout']['title'] = {'text': title, 'x': 0.5}
+    fig['layout']['yaxis']['autorange'] = True
     return fig
 
 
-def update_layout(min_y, max_y, traza, auto_y, title):
-    if auto_y == ['autorange']:
-        layout = {"yaxis.autorange": True, 'title': {'text': title, 'x': 0.5}}
+def update_layout(layout, min_y, max_y, auto_y):
+    print(layout)
+    if (auto_y == ['autorange']) or (min_y is None) or (max_y is None):
+        layout['yaxis']['autorange'] = True
     else:
-        if min_y is None:
-            min_y = traza.data.min() - 1000
-        if max_y is None:
-            max_y = traza.data.max() + 1000
-        layout = {'yaxis': {'range': [min_y, max_y]}, 'title': {'text': title, 'x': 0.5}}
+        layout['yaxis']['autorange'] = False
+        layout['yaxis']['range'] = [min_y, max_y]
     return layout
 
 
@@ -237,7 +236,6 @@ def display_relayout_data(relayoutdata):
     prevent_initial_call=True)
 def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
                 min_y_rsam, auto_y, auto_y_rsam, fig_1, fig_2):
-    print(ctx.triggered_id)
     if channel_selector == 'X':
         trace = ST[0]
         trace_rsam = ST_RSAM[0]
@@ -262,24 +260,20 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
 
     time_tr = trace.slice(start_time, end_time)
     rsam_tr = trace_rsam.slice(start_time, end_time)
-    title = generate_title(time_tr, 'Plot')
-    title_rsam = generate_title(time_tr, 'RSAM')
 
     if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
-        layout = update_layout(min_y, max_y, time_tr, auto_y, title)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
         fig_1['layout'] = layout
-        layout_rsam = update_layout(min_y_rsam, max_y_rsam, rsam_tr, auto_y_rsam, title_rsam)
+        layout_rsam = update_layout(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
         fig_2['layout'] = layout_rsam
 
     else:
         fig_1 = prepare_fig(tr=time_tr, prefix_name='Plot')
         fig_2 = prepare_fig(tr=rsam_tr, prefix_name='RSAM')
-        layout = update_layout(min_y, max_y, time_tr, auto_y, title)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
         fig_1['layout'] = layout
-        layout_rsam = update_layout(min_y_rsam, max_y_rsam, rsam_tr, auto_y_rsam, title_rsam)
+        layout_rsam = update_layout(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
         fig_2['layout'] = layout_rsam
-        fig_1['layout']['uirevision'] = 'keep'
-        fig_2['layout']['uirevision'] = 'keep'
 
     return fig_1, fig_2
 
