@@ -85,7 +85,6 @@ def prepare_fig(tr, prefix_name):
 
 
 def update_layout(layout, min_y, max_y, auto_y):
-    print(layout)
     if (auto_y == ['autorange']) or (min_y is None) or (max_y is None):
         layout['yaxis']['autorange'] = True
     else:
@@ -102,23 +101,31 @@ with open(args.conf_path, mode="rb") as file:
     for par in yaml.safe_load_all(file):
         par_list.append(par)
 
+global ST
 ST = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
+global ST_RSAM
 ST_RSAM = ST.copy()
 
-styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
+
+global channels
 channels = ['X', 'Y', 'Z']
 
+styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
 path_data = par['paths']['path_data']
 starttime = par['date_range']['starttime']
 endtime = par['date_range']['endtime']
 filter_50Hz_f = par['filter']['filter_50Hz_f']
 format_in = par['data_format']['format_in']
+geophone = par['geophone']['geophone_name']
 if starttime:
     starttime = UTCDateTime(starttime)
 if endtime:
     endtime = UTCDateTime(endtime)
+
+
 for i in range(0, 3):
-    data_path = path_data + channels[i]
+    data_path = path_data + geophone + '_' + channels[i]
+    print(data_path)
     TR = read_and_preprocessing(data_path, format_in, starttime, endtime)
     # Computes RSAM
     TR_RSAM = TR.copy()
@@ -142,6 +149,7 @@ del RSAM_TR
 
 app = Dash(__name__)
 app.layout = html.Div([
+    dcc.Dropdown(['Geophone1','Geophone2','Geophone3','Geophone4','Geophone5','Geophone6','Geophone7','Geophone8'],id='geophone_selector', value=geophone),
     html.Div(
         ['Select one channel: ',
          dcc.RadioItems(
@@ -231,13 +239,28 @@ def display_relayout_data(relayoutdata):
     Input('min_RSAM', 'value'),
     Input('auto', 'value'),
     Input('auto_RSAM', 'value'),
+    Input('geophone_selector', 'value'),
     State('time_plot', 'figure'),
     State('RSAM', 'figure'),
     prevent_initial_call=True)
 def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
-                min_y_rsam, auto_y, auto_y_rsam, fig_1, fig_2):
+                min_y_rsam, auto_y, auto_y_rsam, geo_sel, fig_1, fig_2):
+    if ctx.triggered_id == 'geophone_selector':
+        for j in range(0, 3):
+            path = path_data + geo_sel + '_' + channels[j]
+            print(path)
+            tr = read_and_preprocessing(path, format_in, starttime, endtime)
+            # Computes RSAM
+            tr_rsam = tr.copy()
+            n_samp = int(tr_rsam.meta.sampling_rate * 60 * 10)  # Amount to 10 minutes
+            tr_rsam.data = uniform_filter1d(abs(tr_rsam.data), size=n_samp)
+            ST[j] = tr
+            ST_RSAM[j] = tr_rsam
+        del tr
+        del tr_rsam
     if channel_selector == 'X':
         trace = ST[0]
+        print(generate_title(trace,'Hola'))
         trace_rsam = ST_RSAM[0]
     elif channel_selector == 'Y':
         trace = ST[1]
