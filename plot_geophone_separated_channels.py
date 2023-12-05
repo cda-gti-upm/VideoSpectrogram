@@ -124,7 +124,7 @@ if endtime:
 
 
 for i in range(0, 3):
-    data_path = path_data + geophone + '_' + channels[i]
+    data_path = path_data + '_' + geophone + '_' + channels[i]
     print(data_path)
     TR = read_and_preprocessing(data_path, format_in, starttime, endtime)
     # Computes RSAM
@@ -247,7 +247,7 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
                 min_y_rsam, auto_y, auto_y_rsam, geo_sel, fig_1, fig_2):
     if ctx.triggered_id == 'geophone_selector':
         for j in range(0, 3):
-            path = path_data + geo_sel + '_' + channels[j]
+            path = path_data + '_' + geo_sel + '_' + channels[j]
             print(path)
             tr = read_and_preprocessing(path, format_in, starttime, endtime)
             # Computes RSAM

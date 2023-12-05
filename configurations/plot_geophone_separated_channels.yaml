@@ -1,10 +1,10 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_ # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma # Path to input datafiles
 
 # Initial geophone to display
 geophone:
-  geophone_name: 'Geophone8'
+  geophone_name: 'Geophone6'
 
 # Date range to plot
 date_range:
