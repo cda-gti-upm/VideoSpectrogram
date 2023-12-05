@@ -294,7 +294,7 @@ def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata
     tr_y = trace_y.slice(start_time, end_time)
     tr_z = trace_z.slice(start_time, end_time)
 
-    if ctx.triggered_id in ['max_x', 'min_x', 'max_y', 'min_y', 'max_z', 'min_z' 'auto_x', 'auto_y', 'auto_z']:
+    if ctx.triggered_id in ['max_x', 'min_x', 'max_y', 'min_y', 'max_z', 'min_z', 'auto_x', 'auto_y', 'auto_z']:
         print('actualizo')
         layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x)
         fig_1['layout'] = layout1
