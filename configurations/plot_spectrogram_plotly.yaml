@@ -1,16 +1,20 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone1_X/  # Path to input datafiles
+  path_data: ./data/CSIC_LaPalma  # Path to input datafiles
   path_output: ./results/spectrogram_plots    # Path for output data (results)
+
+# Initial geophone to display
+geophone:
+  geophone_name: 'Geophone6'
 
 # Date range to plot
 date_range:
   starttime: 2021-11-25 00:00:00  # Date example: 2022-01-16 23:59:59
-  endtime: 2021-11-25 00:10:00
+  endtime: 2021-11-25 00:50:00
 
 # Filtering
 filter:
-  filter_50Hz_f: False  # Flag to Filter 50Hz signal energy
+  filter_50Hz_f: True  # Flag to Filter 50Hz signal energy
 
 # Data format
 data_format:

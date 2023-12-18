@@ -1,0 +1,1 @@
+python plot_spectrogram_plotly.py configurations/plot_spectrogram_plotly.yaml

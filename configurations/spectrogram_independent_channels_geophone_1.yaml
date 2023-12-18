@@ -33,7 +33,7 @@ plotting:
   S_max: 130 # 145
   S_min: 75  # 75
   # Maximum an minimum frequency value to represent spectrograms
-  Low_frequency: 5
+  Low_frequency: 0
   High_frequency: 125
 
 # Day plotting
