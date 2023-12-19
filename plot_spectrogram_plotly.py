@@ -3,7 +3,7 @@ Plot seismic data: one plot per geophone and channel
 Read datafiles of given locations (geophones) and channels and generate one independent plot for every
 one.
 """
-
+import math
 import os
 import librosa.display
 
@@ -15,7 +15,7 @@ from utils import read_data_from_folder
 import numpy as np
 import argparse
 import yaml
-
+from screeninfo import get_monitors
 import plotly.express as px
 import pandas as pd
 from screeninfo import get_monitors
@@ -53,35 +53,48 @@ def read_and_preprocessing(path, in_format, start, end):
     return trace
 
 
-def prepare_fig(trace, start_time, end_time, is_ltsa):
+def prepare_fig(trace, start_time, end_time):
     print(f'Preparing figure...')
     print('Updating dates...')
     tr = trace.slice(start_time, end_time)
-    '''
-    if is_ltsa:
-        s = seismicLTSA(tr.data, tr.meta.sampling_rate)
-        fig_size = fig.get_size_inches() * fig.dpi  # size in pixels
-        params = {'div_len': int(np.round(tr.data.size / fig_size[0] * 10 / 9)),  # Length in numer of samples
+    n_pixels = []
+    for m in get_monitors():
+        n_pixels.append(m.width)
+
+    res = max(n_pixels)
+    num_samples = math.ceil(len(tr.data) / hop_length)
+    if num_samples > (res * 10):
+        print('COMPUTATION OF LTSA')
+        d = seismicLTSA(tr.data, tr.meta.sampling_rate)
+        params = {'div_len': int(np.round(len(tr.data)/res)),  # Length in numer of samples
                   'subdiv_len': win_length,
                   'nfft': n_fft,
                   'noverlap': hop_length}
-        s.set_params(params)
+        d.set_params(params)
+        print(params['div_len'])
 
         # compute the LTSA -- identical to s.compute()
-        s.compute(ref=1, amin=1e-5, top_db=None)
+        d.compute(ref=1, amin=1e-5, top_db=None)
+        S_db = d.ltsa
+        frame_indices = np.arange(S_db.shape[1])
+        time_rel = (np.asanyarray(frame_indices) * d.div_len + (d.div_len / 2)).astype(int) / float(tr.meta.sampling_rate)
+        freqs = np.arange(0, n_fft / 2) * tr.meta.sampling_rate / n_fft
+        print(S_db.shape)
 
-        S_db = s.ltsa
-        '''
-    D = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
-    frame_indices = np.arange(D.shape[1])
-    time_rel = librosa.frames_to_time(frame_indices, sr=tr.meta.sampling_rate, hop_length=hop_length, n_fft=None)
+    else:
+        print('COMPUTATION OF COMPLETE SPECTROGRAM')
+        d = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
+        S_db = librosa.amplitude_to_db(np.abs(d), ref=1, amin=1e-5, top_db=None)
+        print(S_db.shape)
+        print(len(tr.data))
+        frame_indices = np.arange(d.shape[1])
+        time_rel = librosa.frames_to_time(frame_indices, sr=tr.meta.sampling_rate, hop_length=hop_length, n_fft=None)
+        freqs = np.arange(0, 1 + n_fft / 2) * tr.meta.sampling_rate / n_fft
+
     time_abs = list([tr.stats.starttime + time_rel[0]])
     time_abs[0] = tr.stats.starttime + time_rel[0]
     for i in range(1, len(time_rel)):
         time_abs.append(tr.stats.starttime + time_rel[i])
-    freqs = np.arange(0, 1 + n_fft / 2) * tr.meta.sampling_rate / n_fft
-    #S_db = librosa.amplitude_to_db(np.abs(D), ref=1, amin=1e-5, top_db=None)
-    S_db = librosa.amplitude_to_db(np.abs(D), ref=1, amin=1e-5, top_db=None)
 
     fig = px.imshow(S_db, x=time_abs, y=freqs, origin='lower', labels={'x': 'Time', 'y': 'Frequency (Hz)', 'color': 'Power (dB)'},
                     color_continuous_scale='jet', zmin=75, zmax=130)
@@ -210,7 +223,7 @@ def update(channel_selector, startdate, enddate, geo_sel):
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
 
-    fig1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time, is_ltsa=False)
+    fig1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time)
     print('Graph updated!')
     return fig1
 

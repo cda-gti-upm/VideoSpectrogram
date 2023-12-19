@@ -9,8 +9,8 @@ geophone:
 
 # Date range to plot
 date_range:
-  starttime: 2021-11-25 00:00:00  # Date example: 2022-01-16 23:59:59
-  endtime: 2021-11-25 00:50:00
+  starttime: null  # Date example: 2022-01-16 23:59:59
+  endtime: null
 
 # Filtering
 filter:
