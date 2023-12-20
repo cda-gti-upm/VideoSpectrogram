@@ -1,8 +1,9 @@
 import os
 import time
-from subprocess import Popen
+import subprocess
 devnull = open(os.devnull, 'wb')
 # Python >= 3.3 has subprocess.DEVNULL
-Popen(['python', 'test_dash_app_1.py'], stdout=devnull, stderr=devnull)
-print(os.getgid())
-time.sleep(30)
+proc = subprocess.Popen(['python', 'test_dash_app_1.py'], stdout=devnull, stderr=devnull)
+time.sleep(60)
+proc.kill()
+
