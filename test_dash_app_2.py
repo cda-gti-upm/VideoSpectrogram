@@ -1,5 +1,15 @@
 from dash import Dash, dcc, html, Input, Output, callback
 import plotly.express as px
+import webbrowser
+from threading import Timer
+
+
+
+
+
+
+
+
 
 import pandas as pd
 
@@ -18,6 +28,11 @@ app.layout = html.Div([
         id='year-slider'
     )
 ])
+port = 5000 # or simply open on the default `8050` port
+
+
+def open_browser():
+    webbrowser.open_new("http://localhost:{}".format(port))
 
 
 @callback(
@@ -35,6 +50,7 @@ def update_figure(selected_year):
     return fig
 
 
-
-app.run(debug=True)
+if __name__ == '__main__':
+    Timer(1, open_browser).start()
+    app.run_server(debug=True, port=port)
 

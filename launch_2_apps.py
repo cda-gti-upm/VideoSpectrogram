@@ -1,5 +1,0 @@
-import test_dash_app_1
-import test_dash_app_2
-
-test_dash_app_1
-test_dash_app_2

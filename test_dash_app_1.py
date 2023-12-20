@@ -1,7 +1,9 @@
+import os
+import signal
 from dash import Dash, dcc, html, Input, Output, callback
-
-app = Dash(__name__)
-
+import webbrowser
+from threading import Timer
+app = Dash(name=__name__, title='Prueba_1')
 app.layout = html.Div([
     html.H6("Change the value in the text box to see callbacks in action!"),
     html.Div([
@@ -14,13 +16,24 @@ app.layout = html.Div([
 ])
 
 
+port = 5000 # or simply open on the default `8050` port
+
+
+def open_browser():
+    webbrowser.open_new("http://localhost:{}".format(port))
+
+
 @callback(
     Output(component_id='my-output', component_property='children'),
     Input(component_id='my-input', component_property='value')
 )
 def update_output_div(input_value):
+    if input_value == 'kill':
+        pid = os.getgid()
+        print(pid)
+        os.kill(pid, signal.SIGKILL)
     return f'Output: {input_value}'
 
 
-
-app.run(debug=True)
+Timer(1, open_browser).start()
+app.run(debug=False, port=port)
