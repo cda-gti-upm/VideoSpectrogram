@@ -29,9 +29,9 @@ def open_browser():
 )
 def update_output_div(input_value):
     if input_value == 'kill':
-        pid = os.getgid()
+        pid = os.getpid()
         print(pid)
-        os.kill(pid, signal.SIGKILL)
+        os.kill(pid, signal.SIGTERM)
     return f'Output: {input_value}'
 
 
