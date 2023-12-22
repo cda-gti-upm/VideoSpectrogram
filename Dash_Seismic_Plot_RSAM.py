@@ -8,13 +8,12 @@ import obspy
 from obspy.core import UTCDateTime
 import obspy.signal.filter
 from utils import read_data_from_folder
-import argparse
-import yaml
 from scipy.ndimage import uniform_filter1d
 import plotly.express as px
 import pandas as pd
 from screeninfo import get_monitors
 from dash import Dash, dcc, html, Input, Output, State, ctx
+import sys
 
 
 """
@@ -93,38 +92,39 @@ def update_layout(layout, min_y, max_y, auto_y):
     return layout
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("conf_path")
-args = parser.parse_args()
-par_list = list()
-with open(args.conf_path, mode="rb") as file:
-    for par in yaml.safe_load_all(file):
-        par_list.append(par)
+args = sys.argv
+geophone = args[1]
+initial_channel = args[2]
+start = args[3]
+end = args[4]
+filt_50Hz = args[5]
+format_in = args[6]
+print(args)
 
-global ST
 ST = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
-global ST_RSAM
 ST_RSAM = ST.copy()
-
-
-global channels
 channels = ['X', 'Y', 'Z']
 
 styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
-path_data = par['paths']['path_data']
-starttime = par['date_range']['starttime']
-endtime = par['date_range']['endtime']
-filter_50Hz_f = par['filter']['filter_50Hz_f']
-format_in = par['data_format']['format_in']
-geophone = par['geophone']['geophone_name']
-if starttime:
-    starttime = UTCDateTime(starttime)
-if endtime:
-    endtime = UTCDateTime(endtime)
+path_root = './data/CSIC_LaPalma'
 
+if start:
+    starttime = UTCDateTime(start)
+else:
+    starttime = None
+
+if end:
+    endtime = UTCDateTime(end)
+else:
+    endtime = None
+
+if filt_50Hz == 's':
+    filter_50Hz_f = True
+else:
+    filter_50Hz_f = False
 
 for i in range(0, 3):
-    data_path = path_data + '_' + geophone + '_' + channels[i]
+    data_path = path_root + '_' + geophone + '_' + channels[i]
     print(data_path)
     TR = read_and_preprocessing(data_path, format_in, starttime, endtime)
     # Computes RSAM
@@ -159,7 +159,7 @@ app.layout = html.Div([
                 {'label': 'Channel Y   ', 'value': 'Y'},
                 {'label': 'Channel Z   ', 'value': 'Z'}
             ],
-            value='X',
+            value=initial_channel,
             style={'display': 'inline-block'})],
 
         style={'textAlign': 'center'}
@@ -194,7 +194,6 @@ app.layout = html.Div([
                 value=None
             ),
     dcc.Graph(id='time_plot', figure=fig1),
-    #html.Pre(id='relayout-data-1', style=styles['pre']),
     dcc.Checklist(id='auto_RSAM', options=['autorange'], value=['autorange']),
     html.Div('Select the amplitude range (min to max):'),
     dcc.Input(
@@ -207,22 +206,9 @@ app.layout = html.Div([
         type='number',
         value=None
     ),
-    dcc.Graph(id='RSAM', figure=fig2),
-    #html.Pre(id='relayout-data-2', style=styles['pre'])
+    dcc.Graph(id='RSAM', figure=fig2)
 ])
 
-'''
-@app.callback(Output('relayout-data-1', 'children'),
-              [Input('time_plot', 'relayoutData')])
-def display_relayout_data(relayoutdata):
-    return json.dumps(relayoutdata, indent=2)
-
-
-@app.callback(Output('relayout-data-2', 'children'),
-              [Input('RSAM', 'relayoutData')])
-def display_relayout_data(relayoutdata):
-    return json.dumps(relayoutdata, indent=2)
-'''
 
 
 @app.callback(
@@ -247,7 +233,7 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
                 min_y_rsam, auto_y, auto_y_rsam, geo_sel, fig_1, fig_2):
     if ctx.triggered_id == 'geophone_selector':
         for j in range(0, 3):
-            path = path_data + '_' + geo_sel + '_' + channels[j]
+            path = path_root + '_' + geo_sel + '_' + channels[j]
             print(path)
             tr = read_and_preprocessing(path, format_in, starttime, endtime)
             # Computes RSAM
@@ -302,7 +288,7 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
 
 
 # Main program
-if __name__ == "__main__":
+# Run the app
+app.run(debug=False)
 
-    # Run the app
-    app.run(debug=False)
+
