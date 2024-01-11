@@ -246,7 +246,6 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
         del tr_rsam
     if channel_selector == 'X':
         trace = ST[0]
-        print(generate_title(trace,'Hola'))
         trace_rsam = ST_RSAM[0]
     elif channel_selector == 'Y':
         trace = ST[1]

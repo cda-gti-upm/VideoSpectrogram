@@ -6,7 +6,7 @@ one.
 import math
 import os
 import librosa.display
-
+import sys
 import obspy
 from obspy.core import UTCDateTime
 import obspy.signal.filter
@@ -19,7 +19,7 @@ from screeninfo import get_monitors
 import plotly.express as px
 import pandas as pd
 from screeninfo import get_monitors
-from dash import Dash, dcc, html, Input, Output, ctx
+from dash import Dash, dcc, html, Input, Output, ctx, State
 
 from ltsa.ltsa import seismicLTSA
 
@@ -51,8 +51,43 @@ def read_and_preprocessing(path, in_format, start, end):
 
     return trace
 
+def generate_title(tr, prefix_name):
+    title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
+    f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
+    f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
+    return title
 
-def prepare_fig(trace, start_time, end_time):
+def prepare_fig(tr, prefix_name):
+    print(f'Preparing figure...')
+    print('Updating dates...')
+    # Decimation
+    print(f'Decimation...')
+    num_samples = len(tr.data)
+    print(f'{prefix_name} trace has {len(tr.data)} samples...')
+    n_pixels = []
+    for m in get_monitors():
+        n_pixels.append(m.width)
+
+    target_num_samples = max(n_pixels)
+    print(f'Monitor horizontal resolution is {target_num_samples} pixels')
+    oversampling_factor = 25
+    factor = int(num_samples / (target_num_samples * oversampling_factor))
+    if factor > 1:
+        tr.decimate(factor, no_filter=True)
+        print(f'{prefix_name} trace reduced to {len(tr.data)} samples...')
+    # Plotting and formatting
+    print(f'Plotting and formating {prefix_name}...')
+    df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
+    xlabel = "Date"
+    ylabel = "Amplitude"
+    title = generate_title(tr, prefix_name)
+
+    fig = px.line(df, x="times", y="data", title='', labels={'times': xlabel, 'data': ylabel})
+    fig['layout']['title'] = {'text': title, 'x': 0.5}
+    fig['layout']['yaxis']['autorange'] = True
+    return fig
+
+def prepare_spectrogram(trace, start_time, end_time):
     print(f'Preparing figure...')
     print('Updating dates...')
     tr = trace.slice(start_time, end_time)
@@ -105,48 +140,52 @@ def prepare_fig(trace, start_time, end_time):
     return fig
 
 
-parser = argparse.ArgumentParser()
-parser.add_argument("conf_path")
-args = parser.parse_args()
-par_list = list()
-with open(args.conf_path, mode="rb") as file:
-    for par in yaml.safe_load_all(file):
-        par_list.append(par)
+def update_layout(layout, min_y, max_y, auto_y):
+    if (auto_y == ['autorange']) or (min_y is None) or (max_y is None):
+        layout['yaxis']['autorange'] = True
+    else:
+        layout['yaxis']['autorange'] = False
+        layout['yaxis']['range'] = [min_y, max_y]
+    return layout
+
 
 global ST
 ST = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
 global channels
 channels = ['X', 'Y', 'Z']
 
-path_data = par['paths']['path_data']
-path_output = par['paths']['path_output']
-starttime = par['date_range']['starttime']
-endtime = par['date_range']['endtime']
-filter_50Hz_f = par['filter']['filter_50Hz_f']
-format_in = par['data_format']['format_in']
-win_length = par['spectrogram']['win_length']
-hop_length = par['spectrogram']['hop_length']
-n_fft = par['spectrogram']['n_fft']
-window = par['spectrogram']['window']
-spec_interval = par['spectrogram']['spec_interval']
-a_max = par['plotting']['a_max']
-a_min = par['plotting']['a_min']
-S_max = par['plotting']['S_max']
-S_min = par['plotting']['S_min']
-Low_frequency = par['plotting']['Low_frequency']
-High_frequency = par['plotting']['High_frequency']
-time_interval_one_row = par['day_plotting']['time_interval_one_row']
-fig_format = par['fig_format']
-verbose = par['verbose']
-geophone = par['geophone']['geophone_name']
+args = sys.argv
+print(args)
+geophone = args[1]
+initial_channel = args[2]
+start = args[3]
+end = args[4]
+filt_50Hz = args[5]
+format_in = args[6]
+win_length = int(args[7])
+hop_length = int(args[8])
+n_fft = int(args[9])
+window = args[10]
+S_max = int(args[11])
+S_min = int(args[12])
+path_root = './data/CSIC_LaPalma'
+if start:
+    starttime = UTCDateTime(start)
+else:
+    starttime = None
 
-if starttime:
-    starttime = UTCDateTime(starttime)
-if endtime:
-    endtime = UTCDateTime(endtime)
+if end:
+    endtime = UTCDateTime(end)
+else:
+    endtime = None
+
+if filt_50Hz == 's':
+    filter_50Hz_f = True
+else:
+    filter_50Hz_f = False
 
 for i in range(0, 3):
-    data_path = path_data + '_' + geophone + '_' + channels[i]
+    data_path = path_root + '_' + geophone + '_' + channels[i]
     print(data_path)
     TR = read_and_preprocessing(data_path, format_in, starttime, endtime)
     ST[i] = TR
@@ -154,6 +193,12 @@ for i in range(0, 3):
 del TR
 starttime = ST[0].stats.starttime
 endtime = ST[0].stats.endtime
+TIME_TR = ST[0].slice(starttime, endtime)
+SPEC_TR = ST[0].slice(starttime, endtime)
+fig1 = prepare_fig(TIME_TR, 'Plot')
+fig2 = prepare_spectrogram(SPEC_TR, starttime, endtime)
+del TIME_TR
+del SPEC_TR
 # Creating app layout:
 
 app = Dash(__name__)
@@ -170,7 +215,7 @@ app.layout = html.Div([
                  {'label': 'Channel Y   ', 'value': 'Y'},
                  {'label': 'Channel Z   ', 'value': 'Z'}
              ],
-             value='X',
+             value=initial_channel,
              style={'display': 'inline-block'})],
 
         style={'textAlign': 'center'}
@@ -191,21 +236,60 @@ app.layout = html.Div([
 
         style={'textAlign': 'center'}
     ),
-    dcc.Graph(id='time_plot')
+    dcc.Checklist(id='auto', options=['autorange'], value=['autorange']),
+    html.Div('Select the amplitude range (min to max):'),
+    dcc.Input(
+            id='min',
+            type='number',
+            value=None
+        ),
+    dcc.Input(
+                id='max',
+                type='number',
+                value=None
+            ),
+    dcc.Graph(id='time_plot', figure=fig1),
+    dcc.Checklist(id='auto_freq', options=['autorange'], value=['autorange']),
+    html.Div('Select the frequency range (min to max):'),
+    dcc.Input(
+        id='min_freq',
+        type='number',
+        value=None
+    ),
+    dcc.Input(
+        id='max_freq',
+        type='number',
+        value=None
+    ),
+    dcc.Graph(id='spectrogram', figure=fig2)
 ])
 
 
 @app.callback(
     Output('time_plot', 'figure'),
+    Output('spectrogram', 'figure'),
     Input('channel_selector', 'value'),
     Input('startdate', 'value'),
     Input('enddate', 'value'),
-    Input('geophone_selector', 'value')
+    Input('time_plot', 'relayoutData'),
+    Input('spectrogram', 'relayoutData'),
+    Input('max', 'value'),
+    Input('min', 'value'),
+    Input('max_freq', 'value'),
+    Input('min_freq', 'value'),
+    Input('auto', 'value'),
+    Input('auto_freq', 'value'),
+    Input('geophone_selector', 'value'),
+    State('time_plot', 'figure'),
+    State('spectrogram', 'figure'),
+    prevent_initial_call=True
 )
-def update(channel_selector, startdate, enddate, geo_sel):
+def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_freq,
+           min_freq, auto_y, auto_freq, geo_sel, fig_1, fig_2):
+    print(ctx.triggered_id)
     if ctx.triggered_id == 'geophone_selector':
         for j in range(0, 3):
-            path = path_data + '_' + geo_sel + '_' + channels[j]
+            path = path_root + '_' + geo_sel + '_' + channels[j]
             print(path)
             tr = read_and_preprocessing(path, format_in, starttime, endtime)
             ST[j] = tr
@@ -222,9 +306,35 @@ def update(channel_selector, startdate, enddate, geo_sel):
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
 
-    fig1 = prepare_fig(trace=trace, start_time=start_time, end_time=end_time)
+    if ctx.triggered_id in ['time_plot', 'channel_selector']:
+        if "xaxis.range[0]" in relayoutdata_1:
+            start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+
+    if ctx.triggered_id in ['spectrogram', 'channel_selector']:
+        if "xaxis.range[0]" in relayoutdata_2:
+            start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
+
+    time_tr = trace.slice(start_time, end_time)
+    spec_tr = trace.slice(start_time, end_time)
+    if ctx.triggered_id in ['max', 'min', 'max_freq', 'min_freq', 'auto', 'auto_freq']:
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
+        fig_1['layout'] = layout
+        layout_spectrogram = update_layout(fig_2['layout'], min_freq, max_freq, auto_freq)
+        fig_2['layout'] = layout_spectrogram
+
+    else:
+        fig_1 = prepare_fig(tr=time_tr, prefix_name='Plot')
+        fig_2 = prepare_spectrogram(trace=spec_tr, start_time=start_time, end_time=end_time)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
+        fig_1['layout'] = layout
+        layout_spectrogram = update_layout(fig_2['layout'], min_freq, max_freq, auto_freq)
+        fig_2['layout'] = layout_spectrogram
+
+
     print('Graph updated!')
-    return fig1
+    return fig_1, fig_2
 
 
 # Main program
