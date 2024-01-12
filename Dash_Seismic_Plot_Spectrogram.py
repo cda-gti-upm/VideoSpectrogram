@@ -50,11 +50,24 @@ def read_and_preprocessing(path, in_format, start, end):
                                                   zerophase=True)
 
     return trace
+'''
+def av_signal(tr, factor):
+    length = len(tr)
+    interval_length = round(length/factor)
+    n_intervals = math.ceil(length/interval_length)
+    tr_s = obspy.core.Trace(data=np.arange(0,n_intervals))
+    
+    for i in range(0, n_intervals-1):
+        avg = 0
+        for j in range(i*interval_length, i*interval_length + interval_length):
+            avg += tr.data(j)
+        
+        avg = avg / interval_length
+        tr_s.data[i] = avg
+'''
 
 def generate_title(tr, prefix_name):
     title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
-    f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
-    f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
     return title
 
 def prepare_fig(tr, prefix_name):
@@ -130,10 +143,10 @@ def prepare_spectrogram(trace, start_time, end_time):
     time_abs[0] = tr.stats.starttime + time_rel[0]
     for i in range(1, len(time_rel)):
         time_abs.append(tr.stats.starttime + time_rel[i])
-
+    title = generate_title(trace,'Spectrogram')
     fig = px.imshow(S_db, x=time_abs, y=freqs, origin='lower',
                     labels={'x': 'Time', 'y': 'Frequency (Hz)', 'color': 'Power (dB)'},
-                    color_continuous_scale='jet', zmin=75, zmax=130)
+                    color_continuous_scale='jet', zmin=75, zmax=130, title=title)
     # Use the parameters [a_min, a_max] if data values are inside that range. If not use the min and max data
     # values.
 
@@ -226,12 +239,14 @@ app.layout = html.Div([
              id='startdate',
              type='text',
              value=starttime.strftime("%Y-%m-%d %H:%M:%S"),
+             debounce=True,
              style={'display': 'inline-block'}
          ),
          dcc.Input(
              id='enddate',
              type='text',
              value=endtime.strftime("%Y-%m-%d %H:%M:%S"),
+             debounce=True,
              style={'display': 'inline-block'})],
 
         style={'textAlign': 'center'}
@@ -241,12 +256,14 @@ app.layout = html.Div([
     dcc.Input(
             id='min',
             type='number',
-            value=None
+            value=None,
+            debounce=True
         ),
     dcc.Input(
                 id='max',
                 type='number',
-                value=None
+                value=None,
+                debounce=True
             ),
     dcc.Graph(id='time_plot', figure=fig1),
     dcc.Checklist(id='auto_freq', options=['autorange'], value=['autorange']),
@@ -254,12 +271,14 @@ app.layout = html.Div([
     dcc.Input(
         id='min_freq',
         type='number',
-        value=None
+        value=None,
+        debounce=True
     ),
     dcc.Input(
         id='max_freq',
         type='number',
-        value=None
+        value=None,
+        debounce=True
     ),
     dcc.Graph(id='spectrogram', figure=fig2)
 ])
@@ -296,12 +315,13 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
 
         del tr
 
-    if channel_selector == 'X':
-        trace = ST[0]
-    elif channel_selector == 'Y':
-        trace = ST[1]
-    else:
-        trace = ST[2]
+
+        if channel_selector == 'X':
+            trace = ST[0]
+        elif channel_selector == 'Y':
+            trace = ST[1]
+        else:
+            trace = ST[2]
 
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)

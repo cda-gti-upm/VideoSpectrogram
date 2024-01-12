@@ -171,13 +171,16 @@ app.layout = html.Div([
              id='startdate',
              type='text',
              value=starttime.strftime("%Y-%m-%d %H:%M:%S"),
-             style={'display': 'inline-block'}
+             style={'display': 'inline-block'},
+             debounce=True
          ),
          dcc.Input(
              id='enddate',
              type='text',
              value=endtime.strftime("%Y-%m-%d %H:%M:%S"),
-             style={'display': 'inline-block'})],
+             debounce=True,
+             style={'display': 'inline-block'},)],
+
 
         style={'textAlign': 'center'}
     ),
@@ -186,12 +189,14 @@ app.layout = html.Div([
     dcc.Input(
             id='min_x',
             type='number',
-            value=None
+            value=None,
+            debounce=True
         ),
     dcc.Input(
                 id='max_x',
                 type='number',
-                value=None
+                value=None,
+                debounce=True
             ),
     dcc.Graph(id='x_plot', figure=fig1),
     #html.Pre(id='relayout-data-1', style=styles['pre']),
@@ -200,12 +205,14 @@ app.layout = html.Div([
     dcc.Input(
         id='min_y',
         type='number',
-        value=None
+        value=None,
+        debounce=True
     ),
     dcc.Input(
         id='max_y',
         type='number',
-        value=None
+        value=None,
+        debounce=True
     ),
     dcc.Graph(id='y_plot', figure=fig2),
     #html.Pre(id='relayout-data-2', style=styles['pre'])
@@ -214,12 +221,14 @@ app.layout = html.Div([
     dcc.Input(
         id='min_z',
         type='number',
-        value=None
+        value=None,
+        debounce=True
     ),
     dcc.Input(
         id='max_z',
         type='number',
-        value=None
+        value=None,
+        debounce=True
     ),
     dcc.Graph(id='z_plot', figure=fig3),
 ])

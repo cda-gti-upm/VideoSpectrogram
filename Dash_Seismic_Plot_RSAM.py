@@ -171,12 +171,14 @@ app.layout = html.Div([
              id='startdate',
              type='text',
              value=starttime.strftime("%Y-%m-%d %H:%M:%S"),
-             style={'display': 'inline-block'}
+             style={'display': 'inline-block'},
+             debounce=True
          ),
          dcc.Input(
              id='enddate',
              type='text',
              value=endtime.strftime("%Y-%m-%d %H:%M:%S"),
+             debounce=True,
              style={'display': 'inline-block'})],
 
         style={'textAlign': 'center'}
@@ -186,12 +188,14 @@ app.layout = html.Div([
     dcc.Input(
             id='min',
             type='number',
-            value=None
+            value=None,
+            debounce=True
         ),
     dcc.Input(
                 id='max',
                 type='number',
-                value=None
+                value=None,
+                debounce=True
             ),
     dcc.Graph(id='time_plot', figure=fig1),
     dcc.Checklist(id='auto_RSAM', options=['autorange'], value=['autorange']),
@@ -199,12 +203,14 @@ app.layout = html.Div([
     dcc.Input(
         id='min_RSAM',
         type='number',
-        value=None
+        value=None,
+        debounce=True
     ),
     dcc.Input(
         id='max_RSAM',
         type='number',
-        value=None
+        value=None,
+        debounce=True
     ),
     dcc.Graph(id='RSAM', figure=fig2)
 ])
