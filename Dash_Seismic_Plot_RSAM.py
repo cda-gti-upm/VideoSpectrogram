@@ -84,9 +84,10 @@ def prepare_fig(tr, prefix_name):
 
 
 def update_layout(layout, min_y, max_y, auto_y):
-    if (auto_y == ['autorange']) or (min_y is None) or (max_y is None):
+    if ((auto_y in [['Amplitude autorange'], ['RSAM autorange']]) or (min_y is None)) or (max_y is None):
         layout['yaxis']['autorange'] = True
     else:
+        print('HOLA')
         layout['yaxis']['autorange'] = False
         layout['yaxis']['range'] = [min_y, max_y]
     return layout
@@ -151,7 +152,7 @@ app = Dash(__name__)
 app.layout = html.Div([
     dcc.Dropdown(['Geophone1','Geophone2','Geophone3','Geophone4','Geophone5','Geophone6','Geophone7','Geophone8'],id='geophone_selector', value=geophone),
     html.Div(
-        ['Select one channel: ',
+        ['Channel: ',
          dcc.RadioItems(
             id='channel_selector',
             options=[
@@ -160,13 +161,11 @@ app.layout = html.Div([
                 {'label': 'Channel Z   ', 'value': 'Z'}
             ],
             value=initial_channel,
-            style={'display': 'inline-block'})],
-
-        style={'textAlign': 'center'}
+            style={'display': 'inline-block'})]
     ),
 
     html.Div(
-        ['Select the start and end time (format: yyyy-mm-dd hh:mm:ss): ',
+        ['Start and end time (format: yyyy-mm-dd hh:mm:ss) ',
          dcc.Input(
              id='startdate',
              type='text',
@@ -179,39 +178,49 @@ app.layout = html.Div([
              type='text',
              value=endtime.strftime("%Y-%m-%d %H:%M:%S"),
              debounce=True,
-             style={'display': 'inline-block'})],
+             style={'display': 'inline-block'})]
+    ),
+    html.Div([
+        html.Div(
+        [dcc.Checklist(id='auto', options=['Amplitude autorange'], value=['Amplitude autorange']),
+         html.Div('Amplitude range (min to max):'),
+         dcc.Input(
+             id='min',
+             type='number',
+             value=None,
+             debounce=True
 
-        style={'textAlign': 'center'}
-    ),
-    dcc.Checklist(id='auto', options=['autorange'], value=['autorange']),
-    html.Div('Select the amplitude range (min to max):'),
-    dcc.Input(
-            id='min',
-            type='number',
-            value=None,
-            debounce=True
-        ),
-    dcc.Input(
-                id='max',
-                type='number',
-                value=None,
-                debounce=True
-            ),
+         ),
+         dcc.Input(
+             id='max',
+             type='number',
+             value=None,
+             debounce=True
+
+         )],
+        style={'display': 'in-line-block'}),
+    html.Div(
+        [dcc.Checklist(id='auto_RSAM', options=['RSAM autorange'], value=['RSAM autorange']),
+         html.Div('RSAM range (min to max):'),
+         dcc.Input(
+             id='min_RSAM',
+             type='number',
+             value=None,
+             debounce=True
+
+         ),
+         dcc.Input(
+             id='max_RSAM',
+             type='number',
+             value=None,
+             debounce=True
+             )],
+        style={'display': 'inline-block'})],
+        style={'display': 'flex'}),
+
     dcc.Graph(id='time_plot', figure=fig1),
-    dcc.Checklist(id='auto_RSAM', options=['autorange'], value=['autorange']),
-    html.Div('Select the amplitude range (min to max):'),
-    dcc.Input(
-        id='min_RSAM',
-        type='number',
-        value=None,
-        debounce=True
-    ),
-    dcc.Input(
-        id='max_RSAM',
-        type='number',
-        value=None,
-        debounce=True
-    ),
+
+
     dcc.Graph(id='RSAM', figure=fig2)
 ])
 
@@ -276,6 +285,7 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
     rsam_tr = trace_rsam.slice(start_time, end_time)
 
     if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
+
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
         fig_1['layout'] = layout
         layout_rsam = update_layout(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
