@@ -58,9 +58,7 @@ def read_and_preprocessing(path, in_format, start, end):
 
 
 def generate_title(tr, prefix_name):
-    title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
-    f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
-    f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
+    title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channels X, Y, Z '
     return title
 
 
@@ -87,8 +85,8 @@ def prepare_fig(tr, prefix_name):
     df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
     xlabel = "Date"
     ylabel = "Amplitude"
-    title = generate_title(tr, prefix_name)
 
+    title = generate_title(tr, prefix_name)
     fig = px.line(df, x="times", y="data", title='', labels={'times': xlabel, 'data': ylabel})
     fig['layout']['title'] = {'text': title, 'x': 0.5}
     fig['layout']['yaxis']['autorange'] = True
@@ -319,7 +317,6 @@ def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata
         fig_3['layout'] = layout3
 
     else:
-        print('genero nueva grafica')
         fig_1 = prepare_fig(tr=tr_x, prefix_name='Plot')
         fig_2 = prepare_fig(tr=tr_y, prefix_name='Plot')
         fig_3 = prepare_fig(tr=tr_z, prefix_name='Plot')

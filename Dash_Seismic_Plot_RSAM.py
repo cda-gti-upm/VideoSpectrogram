@@ -292,7 +292,7 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
         fig_2['layout'] = layout_rsam
 
     else:
-        fig_1 = prepare_fig(tr=time_tr, prefix_name='Plot')
+        fig_1 = prepare_fig(tr=time_tr, prefix_name='Measured amplitude')
         fig_2 = prepare_fig(tr=rsam_tr, prefix_name='RSAM')
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
         fig_1['layout'] = layout
