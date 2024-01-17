@@ -251,7 +251,7 @@ app.layout = html.Div([
     State('RSAM', 'figure'),
     prevent_initial_call=True)
 def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
-                min_y_rsam, auto_y, auto_y_rsam, geo_sel, button, fig_1, fig_2):
+                min_y_rsam, auto_y, auto_y_rsam, button, geo_sel, fig_1, fig_2):
     if ctx.triggered_id == 'kill_button':
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
