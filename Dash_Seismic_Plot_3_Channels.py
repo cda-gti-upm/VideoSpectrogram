@@ -27,7 +27,11 @@ from screeninfo import get_monitors
 from dash import Dash, dcc, html, Input, Output, ctx, State
 from datetime import date
 import sys
-
+import webbrowser
+from threading import Timer
+import os
+import signal
+import pyautogui
 """
 Functions
 """
@@ -56,9 +60,10 @@ def read_and_preprocessing(path, in_format, start, end):
 
     return trace
 
-
+def open_browser():
+    webbrowser.open_new("http://localhost:{}".format(port))
 def generate_title(tr, prefix_name):
-    title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channels X, Y, Z '
+    title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, chanel {tr.meta.channel} '
     return title
 
 
@@ -109,7 +114,7 @@ end = args[3]
 filt_50Hz = args[4]
 format_in = args[5]
 print(args)
-
+port = 8050
 global ST
 ST = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
 
@@ -182,6 +187,7 @@ app.layout = html.Div([
 
         style={'textAlign': 'center'}
     ),
+    html.Button('Close app', id='kill_button', n_clicks=0),
     dcc.Checklist(id='auto_x', options=['autorange'], value=['autorange']),
     html.Div('Select the amplitude range (min to max):'),
     dcc.Input(
@@ -263,13 +269,18 @@ def display_relayout_data(relayoutdata):
     Input('auto_x', 'value'),
     Input('auto_y', 'value'),
     Input('auto_z', 'value'),
+    Input('kill_button', 'n_clicks'),
     Input('geophone_selector', 'value'),
     State('x_plot', 'figure'),
     State('y_plot', 'figure'),
     State('z_plot', 'figure'),
     prevent_initial_call=True)
 def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
-                min_y, max_z, min_z, auto_x, auto_y, auto_z, geo_sel, fig_1, fig_2, fig_3):
+                min_y, max_z, min_z, auto_x, auto_y, auto_z, button, geo_sel, fig_1, fig_2, fig_3):
+    if ctx.triggered_id == 'kill_button':
+        pyautogui.hotkey('ctrl', 'w')
+        pid = os.getpid()
+        os.kill(pid, signal.SIGTERM)
 
     if ctx.triggered_id == 'geophone_selector':
         for j in range(0, 3):
@@ -331,4 +342,5 @@ def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata
 
 
  # Run the app
-app.run(debug=False)
+Timer(1, open_browser).start()
+app.run_server(debug=False, port=port)

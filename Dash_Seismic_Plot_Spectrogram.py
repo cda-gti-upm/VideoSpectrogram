@@ -14,7 +14,6 @@ import obspy.signal.filter
 from utils import read_data_from_folder
 import numpy as np
 import argparse
-import yaml
 from screeninfo import get_monitors
 import plotly.express as px
 import pandas as pd
@@ -22,7 +21,11 @@ from screeninfo import get_monitors
 from dash import Dash, dcc, html, Input, Output, ctx, State
 
 from ltsa.ltsa import seismicLTSA
-
+import webbrowser
+from threading import Timer
+import os
+import signal
+import pyautogui
 """
 Functions
 """
@@ -65,7 +68,8 @@ def av_signal(tr, factor):
         avg = avg / interval_length
         tr_s.data[i] = avg
 '''
-
+def open_browser():
+    webbrowser.open_new("http://localhost:{}".format(port))
 def generate_title(tr, prefix_name):
     title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
     return title
@@ -100,7 +104,7 @@ def prepare_fig(tr, prefix_name):
     fig['layout']['yaxis']['autorange'] = True
     return fig
 
-def prepare_spectrogram(trace, start_time, end_time):
+def prepare_spectrogram(trace, start_time, end_time, s_min, s_max):
     print(f'Preparing figure...')
     print('Updating dates...')
     tr = trace.slice(start_time, end_time)
@@ -146,7 +150,7 @@ def prepare_spectrogram(trace, start_time, end_time):
     title = generate_title(trace,'Spectrogram')
     fig = px.imshow(S_db, x=time_abs, y=freqs, origin='lower',
                     labels={'x': 'Time', 'y': 'Frequency (Hz)', 'color': 'Power (dB)'},
-                    color_continuous_scale='jet', zmin=75, zmax=130, title=title)
+                    color_continuous_scale='jet', zmin=s_min, zmax=s_max, title=title)
     # Use the parameters [a_min, a_max] if data values are inside that range. If not use the min and max data
     # values.
 
@@ -182,6 +186,7 @@ window = args[10]
 S_max = int(args[11])
 S_min = int(args[12])
 path_root = './data/CSIC_LaPalma'
+port = 8050
 if start:
     starttime = UTCDateTime(start)
 else:
@@ -209,7 +214,7 @@ endtime = ST[0].stats.endtime
 TIME_TR = ST[0].slice(starttime, endtime)
 SPEC_TR = ST[0].slice(starttime, endtime)
 fig1 = prepare_fig(TIME_TR, 'Plot')
-fig2 = prepare_spectrogram(SPEC_TR, starttime, endtime)
+fig2 = prepare_spectrogram(SPEC_TR, starttime, endtime, s_min=75, s_max=130)
 del TIME_TR
 del SPEC_TR
 # Creating app layout:
@@ -251,6 +256,7 @@ app.layout = html.Div([
 
         style={'textAlign': 'center'}
     ),
+    html.Button('Close app', id='kill_button', n_clicks=0),
     dcc.Checklist(id='auto', options=['autorange'], value=['autorange']),
     html.Div('Select the amplitude range (min to max):'),
     dcc.Input(
@@ -265,7 +271,7 @@ app.layout = html.Div([
                 value=None,
                 debounce=True
             ),
-    dcc.Graph(id='time_plot', figure=fig1),
+    dcc.Graph(id='time_plot', figure=fig1, style={'width': '164.5vh', 'height': '40vh'}),
     dcc.Checklist(id='auto_freq', options=['autorange'], value=['autorange']),
     html.Div('Select the frequency range (min to max):'),
     dcc.Input(
@@ -280,7 +286,20 @@ app.layout = html.Div([
         value=None,
         debounce=True
     ),
-    dcc.Graph(id='spectrogram', figure=fig2)
+    html.Div('Displayed power range'),
+    dcc.Input(
+        id='Smin',
+        type='number',
+        value=75,
+        debounce=True
+    ),
+    dcc.Input(
+        id='Smax',
+        type='number',
+        value=130,
+        debounce=True
+    ),
+    dcc.Graph(id='spectrogram', figure=fig2, style={'width': '170vh', 'height': '40vh'})
 ])
 
 
@@ -298,14 +317,21 @@ app.layout = html.Div([
     Input('min_freq', 'value'),
     Input('auto', 'value'),
     Input('auto_freq', 'value'),
+    Input('kill_button', 'n_clicks'),
     Input('geophone_selector', 'value'),
+    Input('Smin', 'value'),
+    Input('Smax', 'value'),
     State('time_plot', 'figure'),
     State('spectrogram', 'figure'),
     prevent_initial_call=True
 )
 def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_freq,
-           min_freq, auto_y, auto_freq, geo_sel, fig_1, fig_2):
-    print(ctx.triggered_id)
+           min_freq, auto_y, auto_freq, button, geo_sel, s_min, s_max, fig_1, fig_2):
+    if ctx.triggered_id == 'kill_button':
+        pyautogui.hotkey('ctrl', 'w')
+        pid = os.getpid()
+        os.kill(pid, signal.SIGTERM)
+
     if ctx.triggered_id == 'geophone_selector':
         for j in range(0, 3):
             path = path_root + '_' + geo_sel + '_' + channels[j]
@@ -316,12 +342,12 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
         del tr
 
 
-        if channel_selector == 'X':
-            trace = ST[0]
-        elif channel_selector == 'Y':
-            trace = ST[1]
-        else:
-            trace = ST[2]
+    if channel_selector == 'X':
+        trace = ST[0]
+    elif channel_selector == 'Y':
+        trace = ST[1]
+    else:
+        trace = ST[2]
 
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
@@ -346,7 +372,7 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
 
     else:
         fig_1 = prepare_fig(tr=time_tr, prefix_name='Plot')
-        fig_2 = prepare_spectrogram(trace=spec_tr, start_time=start_time, end_time=end_time)
+        fig_2 = prepare_spectrogram(trace=spec_tr, start_time=start_time, end_time=end_time, s_min=s_min, s_max=s_max)
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
         fig_1['layout'] = layout
         layout_spectrogram = update_layout(fig_2['layout'], min_freq, max_freq, auto_freq)
@@ -358,6 +384,6 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
 
 
 # Main program
-
-app.run(debug=False)
+Timer(1, open_browser).start()
+app.run_server(debug=False, port=port)
 

@@ -14,8 +14,11 @@ import pandas as pd
 from screeninfo import get_monitors
 from dash import Dash, dcc, html, Input, Output, State, ctx
 import sys
-
-
+import webbrowser
+from threading import Timer
+import os
+import signal
+import pyautogui
 """
 Functions
 """
@@ -44,7 +47,8 @@ def read_and_preprocessing(path, in_format, start, end):
 
     return trace
 
-
+def open_browser():
+    webbrowser.open_new("http://localhost:{}".format(port))
 def generate_title(tr, prefix_name):
     title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
     f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} '
@@ -100,7 +104,7 @@ start = args[3]
 end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
-print(args)
+port = 8050
 
 ST = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
 ST_RSAM = ST.copy()
@@ -182,7 +186,7 @@ app.layout = html.Div([
     ),
     html.Div([
         html.Div(
-        [dcc.Checklist(id='auto', options=['Amplitude autorange'], value=['Amplitude autorange']),
+         [dcc.Checklist(id='auto', options=['Amplitude autorange'], value=['Amplitude autorange']),
          html.Div('Amplitude range (min to max):'),
          dcc.Input(
              id='min',
@@ -198,8 +202,8 @@ app.layout = html.Div([
              debounce=True
 
          )],
-        style={'display': 'in-line-block'}),
-    html.Div(
+         style={'display': 'in-line-block'}),
+        html.Div(
         [dcc.Checklist(id='auto_RSAM', options=['RSAM autorange'], value=['RSAM autorange']),
          html.Div('RSAM range (min to max):'),
          dcc.Input(
@@ -215,13 +219,14 @@ app.layout = html.Div([
              value=None,
              debounce=True
              )],
-        style={'display': 'inline-block'})],
+        style={'display': 'inline-block'}),
+        html.Button('Close app', id='kill_button', n_clicks=0)],
         style={'display': 'flex'}),
 
-    dcc.Graph(id='time_plot', figure=fig1),
+    dcc.Graph(id='time_plot', figure=fig1, style={'width': '170vh', 'height': '40vh'}),
 
 
-    dcc.Graph(id='RSAM', figure=fig2)
+    dcc.Graph(id='RSAM', figure=fig2, style={'width': '170vh', 'height': '40vh'})
 ])
 
 
@@ -240,12 +245,17 @@ app.layout = html.Div([
     Input('min_RSAM', 'value'),
     Input('auto', 'value'),
     Input('auto_RSAM', 'value'),
+    Input('kill_button', 'n_clicks'),
     Input('geophone_selector', 'value'),
     State('time_plot', 'figure'),
     State('RSAM', 'figure'),
     prevent_initial_call=True)
 def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
-                min_y_rsam, auto_y, auto_y_rsam, geo_sel, fig_1, fig_2):
+                min_y_rsam, auto_y, auto_y_rsam, geo_sel, button, fig_1, fig_2):
+    if ctx.triggered_id == 'kill_button':
+        pyautogui.hotkey('ctrl', 'w')
+        pid = os.getpid()
+        os.kill(pid, signal.SIGTERM)
     if ctx.triggered_id == 'geophone_selector':
         for j in range(0, 3):
             path = path_root + '_' + geo_sel + '_' + channels[j]
@@ -304,6 +314,7 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
 
 # Main program
 # Run the app
-app.run(debug=False)
+Timer(1, open_browser).start()
+app.run_server(debug=False, port=port)
 
 
