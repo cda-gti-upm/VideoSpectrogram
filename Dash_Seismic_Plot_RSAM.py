@@ -19,6 +19,7 @@ from threading import Timer
 import os
 import signal
 import pyautogui
+import socket
 """
 Functions
 """
@@ -91,7 +92,6 @@ def update_layout(layout, min_y, max_y, auto_y):
     if ((auto_y in [['Amplitude autorange'], ['RSAM autorange']]) or (min_y is None)) or (max_y is None):
         layout['yaxis']['autorange'] = True
     else:
-        print('HOLA')
         layout['yaxis']['autorange'] = False
         layout['yaxis']['range'] = [min_y, max_y]
     return layout
@@ -104,7 +104,11 @@ start = args[3]
 end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
-port = 8050
+
+sock = socket.socket()
+sock.bind(('', 0))
+port = sock.getsockname()[1]
+del sock
 
 ST = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
 ST_RSAM = ST.copy()
@@ -154,7 +158,8 @@ del RSAM_TR
 
 app = Dash(__name__)
 app.layout = html.Div([
-    dcc.Dropdown(['Geophone1','Geophone2','Geophone3','Geophone4','Geophone5','Geophone6','Geophone7','Geophone8'],id='geophone_selector', value=geophone),
+    dcc.Dropdown(['Geophone1', 'Geophone2', 'Geophone3', 'Geophone4', 'Geophone5', 'Geophone6', 'Geophone7',
+                  'Geophone8'], id='geophone_selector', value=geophone),
     html.Div(
         ['Channel: ',
          dcc.RadioItems(
@@ -169,7 +174,7 @@ app.layout = html.Div([
     ),
 
     html.Div(
-        ['Start and end time (format: yyyy-mm-dd hh:mm:ss) ',
+        ['Start and end time (yyyy-mm-dd hh:mm:ss): ',
          dcc.Input(
              id='startdate',
              type='text',
@@ -177,55 +182,50 @@ app.layout = html.Div([
              style={'display': 'inline-block'},
              debounce=True
          ),
+         '  ',
          dcc.Input(
              id='enddate',
              type='text',
              value=endtime.strftime("%Y-%m-%d %H:%M:%S"),
              debounce=True,
-             style={'display': 'inline-block'})]
+             style={'display': 'inline-block'}),
+         '  ',
+         html.Button('Close app', id='kill_button', n_clicks=0)]
     ),
-    html.Div([
+    html.Div(children=[
         html.Div(
-         [dcc.Checklist(id='auto', options=['Amplitude autorange'], value=['Amplitude autorange']),
-         html.Div('Amplitude range (min to max):'),
-         dcc.Input(
-             id='min',
-             type='number',
-             value=None,
-             debounce=True
-
-         ),
-         dcc.Input(
-             id='max',
-             type='number',
-             value=None,
-             debounce=True
-
-         )],
-         style={'display': 'in-line-block'}),
+            children=[dcc.Checklist(id='auto', options=['Amplitude autorange'], value=['Amplitude autorange']),
+                      html.Div('Amplitude range (min to max):'),
+                      dcc.Input(
+                          id='min',
+                          type='number',
+                          value=None,
+                          debounce=True),
+                      ' ',
+                      dcc.Input(
+                          id='max',
+                          type='number',
+                          value=None,
+                          debounce=True)],
+            style={'display': 'in-line-block', 'padding-right': '0.5em'}),
         html.Div(
-        [dcc.Checklist(id='auto_RSAM', options=['RSAM autorange'], value=['RSAM autorange']),
-         html.Div('RSAM range (min to max):'),
-         dcc.Input(
-             id='min_RSAM',
-             type='number',
-             value=None,
-             debounce=True
-
-         ),
-         dcc.Input(
-             id='max_RSAM',
-             type='number',
-             value=None,
-             debounce=True
-             )],
-        style={'display': 'inline-block'}),
-        html.Button('Close app', id='kill_button', n_clicks=0)],
+            children=[dcc.Checklist(id='auto_RSAM', options=['RSAM autorange'], value=['RSAM autorange']),
+                      html.Div('RSAM range (min to max):'),
+                      dcc.Input(
+                          id='min_RSAM',
+                          type='number',
+                          value=None,
+                          debounce=True),
+                      ' ',
+                      dcc.Input(
+                          id='max_RSAM',
+                          type='number',
+                          value=None,
+                          debounce=True)],
+            style={'display': 'inline-block'}),],
         style={'display': 'flex'}),
 
     dcc.Graph(id='time_plot', figure=fig1, style={'width': '170vh', 'height': '40vh'}),
-
-
     dcc.Graph(id='RSAM', figure=fig2, style={'width': '170vh', 'height': '40vh'})
 ])
 

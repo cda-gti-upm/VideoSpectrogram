@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.11 (pyRSAM)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="pyRSAM-test" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.11 (pyRSAM)" project-jdk-type="Python SDK" />
 </project>
