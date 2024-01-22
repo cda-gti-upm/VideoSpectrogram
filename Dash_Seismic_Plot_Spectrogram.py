@@ -4,22 +4,17 @@ Read datafiles of given locations (geophones) and channels and generate one inde
 one.
 """
 import math
-import os
 import librosa.display
 import sys
 import obspy
 from obspy.core import UTCDateTime
 import obspy.signal.filter
-
 from utils import read_data_from_folder
 import numpy as np
-import argparse
-from screeninfo import get_monitors
 import plotly.express as px
 import pandas as pd
 from screeninfo import get_monitors
 from dash import Dash, dcc, html, Input, Output, ctx, State
-
 from ltsa.ltsa import seismicLTSA
 import webbrowser
 from threading import Timer
@@ -74,20 +69,16 @@ def generate_title(tr, prefix_name):
     title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
     return title
 
-def prepare_fig(tr, prefix_name):
+def prepare_fig(tr):
     print(f'Preparing figure...')
     print('Updating dates...')
     # Decimation
     print(f'Decimation...')
     num_samples = len(tr.data)
+    prefix_name = 'Seismic amplitude'
     print(f'{prefix_name} trace has {len(tr.data)} samples...')
-    n_pixels = []
-    for m in get_monitors():
-        n_pixels.append(m.width)
-
-    target_num_samples = max(n_pixels)
-    print(f'Monitor horizontal resolution is {target_num_samples} pixels')
-    oversampling_factor = 25
+    target_num_samples = 1920
+    oversampling_factor = 5
     factor = int(num_samples / (target_num_samples * oversampling_factor))
     if factor > 1:
         tr.decimate(factor, no_filter=True)
@@ -99,8 +90,10 @@ def prepare_fig(tr, prefix_name):
     ylabel = "Amplitude"
     title = generate_title(tr, prefix_name)
 
-    fig = px.line(df, x="times", y="data", title='', labels={'times': xlabel, 'data': ylabel})
-    fig['layout']['title'] = {'text': title, 'x': 0.5}
+    fig = px.line(df, x="times", y="data", labels={'times': xlabel, 'data': ylabel})
+    fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
+    fig['layout']['margin'] = {'t': 30, 'b': 30}
+    fig['layout']['xaxis']['automargin'] = False
     fig['layout']['yaxis']['autorange'] = True
     return fig
 
@@ -108,11 +101,7 @@ def prepare_spectrogram(trace, start_time, end_time, s_min, s_max):
     print(f'Preparing figure...')
     print('Updating dates...')
     tr = trace.slice(start_time, end_time)
-    n_pixels = []
-    for m in get_monitors():
-        n_pixels.append(m.width)
-
-    res = max(n_pixels)
+    res = 1920
     num_samples = math.ceil(len(tr.data) / hop_length)
     if num_samples > (res * 10):
         print('COMPUTATION OF LTSA')
@@ -131,14 +120,11 @@ def prepare_spectrogram(trace, start_time, end_time, s_min, s_max):
         time_rel = (np.asanyarray(frame_indices) * d.div_len + (d.div_len / 2)).astype(int) / float(
             tr.meta.sampling_rate)
         freqs = np.arange(0, n_fft / 2) * tr.meta.sampling_rate / n_fft
-        print(S_db.shape)
 
     else:
         print('COMPUTATION OF COMPLETE SPECTROGRAM')
         d = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
         S_db = librosa.amplitude_to_db(np.abs(d), ref=1, amin=1e-5, top_db=None)
-        print(S_db.shape)
-        print(len(tr.data))
         frame_indices = np.arange(d.shape[1])
         time_rel = librosa.frames_to_time(frame_indices, sr=tr.meta.sampling_rate, hop_length=hop_length, n_fft=None)
         freqs = np.arange(0, 1 + n_fft / 2) * tr.meta.sampling_rate / n_fft
@@ -147,12 +133,15 @@ def prepare_spectrogram(trace, start_time, end_time, s_min, s_max):
     time_abs[0] = tr.stats.starttime + time_rel[0]
     for i in range(1, len(time_rel)):
         time_abs.append(tr.stats.starttime + time_rel[i])
-    title = generate_title(trace,'Spectrogram')
+    title = generate_title(trace, 'Spectrogram')
     fig = px.imshow(S_db, x=time_abs, y=freqs, origin='lower',
                     labels={'x': 'Time', 'y': 'Frequency (Hz)', 'color': 'Power (dB)'},
-                    color_continuous_scale='jet', zmin=s_min, zmax=s_max, title=title)
-    # Use the parameters [a_min, a_max] if data values are inside that range. If not use the min and max data
-    # values.
+                    color_continuous_scale='jet', zmin=s_min, zmax=s_max)
+    fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
+    fig['layout']['margin'] = {'t': 30, 'b': 30}
+    fig['layout']['xaxis']['automargin'] = False
+    fig['layout']['yaxis']['autorange'] = True
+    print(fig['layout'])
 
     return fig
 
@@ -213,7 +202,7 @@ starttime = ST[0].stats.starttime
 endtime = ST[0].stats.endtime
 TIME_TR = ST[0].slice(starttime, endtime)
 SPEC_TR = ST[0].slice(starttime, endtime)
-fig1 = prepare_fig(TIME_TR, 'Plot')
+fig1 = prepare_fig(TIME_TR)
 fig2 = prepare_spectrogram(SPEC_TR, starttime, endtime, s_min=75, s_max=130)
 del TIME_TR
 del SPEC_TR
@@ -225,7 +214,7 @@ app.layout = html.Div([
         ['Geophone1', 'Geophone2', 'Geophone3', 'Geophone4', 'Geophone5', 'Geophone6', 'Geophone7', 'Geophone8'],
         id='geophone_selector', value=geophone),
     html.Div(
-        ['Select one channel: ',
+        ['Channel: ',
          dcc.RadioItems(
              id='channel_selector',
              options=[
@@ -235,11 +224,9 @@ app.layout = html.Div([
              ],
              value=initial_channel,
              style={'display': 'inline-block'})],
-
-        style={'textAlign': 'center'}
     ),
     html.Div(
-        ['Select the start and end time (format: yyyy-mm-dd hh:mm:ss): ',
+        ['Start and end time (yyyy-mm-dd hh:mm:ss): ',
          dcc.Input(
              id='startdate',
              type='text',
@@ -252,54 +239,64 @@ app.layout = html.Div([
              type='text',
              value=endtime.strftime("%Y-%m-%d %H:%M:%S"),
              debounce=True,
-             style={'display': 'inline-block'})],
+             style={'display': 'inline-block'}),
+         '  ',
+         html.Button('Close app', id='kill_button', n_clicks=0)],
+    ),
 
-        style={'textAlign': 'center'}
-    ),
-    html.Button('Close app', id='kill_button', n_clicks=0),
-    dcc.Checklist(id='auto', options=['autorange'], value=['autorange']),
-    html.Div('Select the amplitude range (min to max):'),
-    dcc.Input(
-            id='min',
-            type='number',
-            value=None,
-            debounce=True
-        ),
-    dcc.Input(
-                id='max',
-                type='number',
-                value=None,
-                debounce=True
-            ),
-    dcc.Graph(id='time_plot', figure=fig1, style={'width': '164.5vh', 'height': '40vh'}),
-    dcc.Checklist(id='auto_freq', options=['autorange'], value=['autorange']),
-    html.Div('Select the frequency range (min to max):'),
-    dcc.Input(
-        id='min_freq',
-        type='number',
-        value=None,
-        debounce=True
-    ),
-    dcc.Input(
-        id='max_freq',
-        type='number',
-        value=None,
-        debounce=True
-    ),
-    html.Div('Displayed power range'),
-    dcc.Input(
-        id='Smin',
-        type='number',
-        value=75,
-        debounce=True
-    ),
-    dcc.Input(
-        id='Smax',
-        type='number',
-        value=130,
-        debounce=True
-    ),
-    dcc.Graph(id='spectrogram', figure=fig2, style={'width': '170vh', 'height': '40vh'})
+    html.Div(children=[
+        html.Div(
+            children=[dcc.Checklist(id='auto', options=['autorange'], value=['autorange']),
+                      html.Div('Amplitude range (min to max)'),
+                      dcc.Input(
+                          id='min',
+                          type='number',
+                          value=None,
+                          debounce=True
+                      ),
+                      dcc.Input(
+                          id='max',
+                          type='number',
+                          value=None,
+                          debounce=True
+                      )],
+            style={'display': 'in-line-block', 'padding-right': '0.5em'}),
+        html.Div(
+            children=[dcc.Checklist(id='auto_freq', options=['autorange'], value=['autorange']),
+                      html.Div('Spectrogram frequency range (min to max)'),
+                      dcc.Input(
+                          id='min_freq',
+                          type='number',
+                          value=None,
+                          debounce=True
+                      ),
+                      dcc.Input(
+                          id='max_freq',
+                          type='number',
+                          value=None,
+                          debounce=True
+                      )],
+            style={'display': 'in-line-block', 'padding-right': '0.5em'}),
+        html.Div(
+            children=[html.Br(),
+                      html.Div('Spectrogram power range (dB)'),
+                      dcc.Input(
+                          id='Smin',
+                          type='number',
+                          value=75,
+                          debounce=True
+                      ),
+                      dcc.Input(
+                          id='Smax',
+                          type='number',
+                          value=130,
+                          debounce=True
+                      )],
+            style={'display': 'in-line-block'})],
+        style={'display': 'flex'}),
+
+    dcc.Graph(id='time_plot', figure=fig1, style={'width': '164.5vh', 'height': '30vh'}),
+    dcc.Graph(id='spectrogram', figure=fig2, style={'width': '170vh', 'height': '50vh'})
 ])
 
 
@@ -333,6 +330,10 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
         os.kill(pid, signal.SIGTERM)
 
     if ctx.triggered_id == 'geophone_selector':
+        st_length = len(ST[0])
+        ST[0].data = np.zeros(st_length)
+        ST[1].data = np.zeros(st_length)
+        ST[2].data = np.zeros(st_length)
         for j in range(0, 3):
             path = path_root + '_' + geo_sel + '_' + channels[j]
             print(path)
@@ -364,20 +365,22 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
 
     time_tr = trace.slice(start_time, end_time)
     spec_tr = trace.slice(start_time, end_time)
-    if ctx.triggered_id in ['max', 'min', 'max_freq', 'min_freq', 'auto', 'auto_freq']:
+    if ctx.triggered_id in ['max', 'min', 'auto']:
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
         fig_1['layout'] = layout
+    elif ctx.triggered_id in ['max_freq', 'min_freq', 'auto_freq']:
         layout_spectrogram = update_layout(fig_2['layout'], min_freq, max_freq, auto_freq)
         fig_2['layout'] = layout_spectrogram
-
+    elif ctx.triggered_id in ['Smax', 'Smin']:
+        fig_2['layout']['coloraxis']['cmax'] = s_max
+        fig_2['layout']['coloraxis']['cmin'] = s_min
     else:
-        fig_1 = prepare_fig(tr=time_tr, prefix_name='Plot')
+        fig_1 = prepare_fig(tr=time_tr)
         fig_2 = prepare_spectrogram(trace=spec_tr, start_time=start_time, end_time=end_time, s_min=s_min, s_max=s_max)
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
         fig_1['layout'] = layout
         layout_spectrogram = update_layout(fig_2['layout'], min_freq, max_freq, auto_freq)
         fig_2['layout'] = layout_spectrogram
-
 
     print('Graph updated!')
     return fig_1, fig_2
