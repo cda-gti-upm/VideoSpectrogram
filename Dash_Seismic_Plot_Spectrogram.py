@@ -21,33 +21,13 @@ from threading import Timer
 import os
 import signal
 import pyautogui
+from seismic_dash_utils import read_data_from_folder, open_browser, generate_title
 """
 Functions
 """
 
 
-def read_and_preprocessing(path, in_format, start, end):
-    # Read data
-    print(f'Reading data ...')
-    stream = read_data_from_folder(path, in_format, start, end)
 
-    # Sort data
-    print(f'Sorting data ...')
-    stream.sort(['starttime'])
-    print(f'Data spans from {stream[0].stats.starttime} until {stream[-1].stats.endtime}')
-
-    # Merge traces
-    print(f'Merging data ...')
-    stream.merge(method=0, fill_value=0)
-    trace = stream[0]
-
-    # Filtering 50 Hz
-    if filter_50Hz_f:
-        print(f'Filtering 50 Hz signal ...')
-        trace.data = obspy.signal.filter.bandstop(trace.data, 49, 51, trace.meta.sampling_rate, corners=8,
-                                                  zerophase=True)
-
-    return trace
 '''
 def av_signal(tr, factor):
     length = len(tr)
@@ -63,13 +43,9 @@ def av_signal(tr, factor):
         avg = avg / interval_length
         tr_s.data[i] = avg
 '''
-def open_browser():
-    webbrowser.open_new("http://localhost:{}".format(port))
-def generate_title(tr, prefix_name):
-    title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel} '
-    return title
 
-def prepare_fig(tr):
+
+def prepare_fig(tr, oversampling_factor)
     print(f'Preparing figure...')
     print('Updating dates...')
     # Decimation
@@ -78,7 +54,6 @@ def prepare_fig(tr):
     prefix_name = 'Seismic amplitude'
     print(f'{prefix_name} trace has {len(tr.data)} samples...')
     target_num_samples = 1920
-    oversampling_factor = 5
     factor = int(num_samples / (target_num_samples * oversampling_factor))
     if factor > 1:
         tr.decimate(factor, no_filter=True)
