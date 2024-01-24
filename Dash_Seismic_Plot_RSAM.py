@@ -31,6 +31,8 @@ end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
 
+oversampling_factor=10
+
 sock = socket.socket()
 sock.bind(('', 0))
 port = sock.getsockname()[1]
@@ -67,7 +69,10 @@ del TR
 starttime = ST[0].stats.starttime
 endtime = ST[0].stats.endtime
 TR = ST[0].slice(starttime, endtime)
-fig1 = prepare_time_plot(TR, oversampling_factor=10)
+fig1 = prepare_time_plot(TR, oversampling_factor)
+layout = update_layout(fig1['layout'], None, None, ['autorange'], TR, True)
+fig1['layout'] = layout
+print(fig1['layout'])
 fig2 = prepare_rsam(TR)
 del TR
 
@@ -207,18 +212,20 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
 
     tr = trace.slice(start_time, end_time)
-
+    #tr_rsam = tr.copy()
     if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, tr, True)
         fig_1['layout'] = layout
-        layout_rsam = update_layout(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
+        layout_rsam = update_layout(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam, tr, False)
         fig_2['layout'] = layout_rsam
-    else:
-        fig_1 = prepare_time_plot(tr=tr, oversampling_factor=10)
-        fig_2 = prepare_rsam(tr=tr)
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
+
+    if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
+
+        fig_1 = prepare_time_plot(tr, oversampling_factor)
+        fig_2 = prepare_rsam(tr)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, tr, True)
         fig_1['layout'] = layout
-        layout_rsam = update_layout(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
+        layout_rsam = update_layout(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam, tr, False)
         fig_2['layout'] = layout_rsam
 
     return fig_1, fig_2, {'autosize': True}, {'autosize': True}

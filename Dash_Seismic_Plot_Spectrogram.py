@@ -110,6 +110,8 @@ S_max = int(args[11])
 S_min = int(args[12])
 path_root = './data/CSIC_LaPalma'
 
+oversampling_factor = 10
+
 sock = socket.socket()
 sock.bind(('', 0))
 port = sock.getsockname()[1]
@@ -139,13 +141,11 @@ for i in range(0, 3):
 del TR
 starttime = ST[0].stats.starttime
 endtime = ST[0].stats.endtime
-TIME_TR = ST[0].slice(starttime, endtime)
-SPEC_TR = ST[0].slice(starttime, endtime)
-fig1 = prepare_time_plot(TIME_TR, oversampling_factor=10)
-fig2 = prepare_spectrogram(SPEC_TR, starttime, endtime, s_min=75, s_max=130)
+TR = ST[0].slice(starttime, endtime)
+fig1 = prepare_time_plot(TR, oversampling_factor)
+fig2 = prepare_spectrogram(TR, starttime, endtime, s_min=75, s_max=130)
 
-del TIME_TR
-del SPEC_TR
+del TR
 
 # Creating app layout:
 
@@ -304,11 +304,11 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
 
-    time_tr = trace.slice(start_time, end_time)
-    spec_tr = trace.slice(start_time, end_time)
+    tr = trace.slice(start_time, end_time)
+    tr_spec = tr.copy()
 
     if ctx.triggered_id in ['max', 'min', 'auto']:
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, tr, True)
         fig_1['layout'] = layout
     elif ctx.triggered_id in ['max_freq', 'min_freq']:
         fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
@@ -316,9 +316,9 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
         fig_2['layout']['coloraxis']['cmax'] = s_max
         fig_2['layout']['coloraxis']['cmin'] = s_min
     else:
-        fig_1 = prepare_time_plot(tr=time_tr, oversampling_factor=10)
-        fig_2 = prepare_spectrogram(trace=spec_tr, start_time=start_time, end_time=end_time, s_min=s_min, s_max=s_max)
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y)
+        fig_1 = prepare_time_plot(tr=tr, oversampling_factor=oversampling_factor)
+        fig_2 = prepare_spectrogram(trace=tr_spec, start_time=start_time, end_time=end_time, s_min=s_min, s_max=s_max)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, tr, True)
         fig_1['layout'] = layout
         fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
 

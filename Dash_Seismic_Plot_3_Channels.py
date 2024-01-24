@@ -42,8 +42,8 @@ start = args[2]
 end = args[3]
 filt_50Hz = args[4]
 format_in = args[5]
-print(args)
 
+oversampling_factor = 10
 sock = socket.socket()
 sock.bind(('', 0))
 port = sock.getsockname()[1]
@@ -86,9 +86,9 @@ TRACE_X = ST[0].slice(starttime, endtime)
 TRACE_Y = ST[1].slice(starttime, endtime)
 TRACE_Z = ST[2].slice(starttime, endtime)
 
-fig1 = prepare_time_plot(TRACE_X, oversampling_factor=10)
-fig2 = prepare_time_plot(TRACE_Y, oversampling_factor=10)
-fig3 = prepare_time_plot(TRACE_Z, oversampling_factor=10)
+fig1 = prepare_time_plot(TRACE_X, oversampling_factor)
+fig2 = prepare_time_plot(TRACE_Y, oversampling_factor)
+fig3 = prepare_time_plot(TRACE_Z, oversampling_factor)
 
 del TRACE_X
 del TRACE_Y
@@ -237,34 +237,28 @@ def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata
             start_time = UTCDateTime(relayoutdata_3['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_3['xaxis.range[1]'])
 
-    trace_x = ST[0]
-    trace_y = ST[1]
-    trace_z = ST[2]
+    tr_x = ST[0].slice(start_time, end_time)
+    tr_y = ST[1].slice(start_time, end_time)
+    tr_z = ST[2].slice(start_time, end_time)
 
-    tr_x = trace_x.slice(start_time, end_time)
-    del trace_x
-    tr_y = trace_y.slice(start_time, end_time)
-    del trace_y
-    tr_z = trace_z.slice(start_time, end_time)
-    del trace_z
 
     if ctx.triggered_id in ['max_x', 'min_x', 'max_y', 'min_y', 'max_z', 'min_z', 'auto_x', 'auto_y', 'auto_z']:
-        layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x)
+        layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x, tr_x, True)
         fig_1['layout'] = layout1
-        layout2 = update_layout(fig_2['layout'], min_y, max_y, auto_y)
+        layout2 = update_layout(fig_2['layout'], min_y, max_y, auto_y, tr_y, True)
         fig_2['layout'] = layout2
-        layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z)
+        layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z, tr_z, True)
         fig_3['layout'] = layout3
 
     else:
-        fig_1 = prepare_time_plot(tr=tr_x, oversampling_factor=10)
-        fig_2 = prepare_time_plot(tr=tr_y, oversampling_factor=10)
-        fig_3 = prepare_time_plot(tr=tr_z, oversampling_factor=10)
-        layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x)
+        fig_1 = prepare_time_plot(tr_x, oversampling_factor)
+        fig_2 = prepare_time_plot(tr_y, oversampling_factor)
+        fig_3 = prepare_time_plot(tr_z, oversampling_factor)
+        layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x, tr_x, True)
         fig_1['layout'] = layout1
-        layout2 = update_layout(fig_2['layout'], min_y, max_y, auto_y)
+        layout2 = update_layout(fig_2['layout'], min_y, max_y, auto_y, tr_y, True)
         fig_2['layout'] = layout2
-        layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z)
+        layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z, tr_z, True)
         fig_3['layout'] = layout3
 
     return fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True}
