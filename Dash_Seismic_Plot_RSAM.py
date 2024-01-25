@@ -72,13 +72,14 @@ elif initial_channel == 'Y':
     TR = ST[1].copy()
 else:
     TR = ST[2].copy()
+TR_RSAM = TR.copy()
 starttime = TR.stats.starttime
 endtime = TR.stats.endtime
 
 fig1 = prepare_time_plot(TR, oversampling_factor)
 layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
 fig1['layout'] = layout
-fig2 = prepare_rsam(TR)
+fig2 = prepare_rsam(TR, oversampling_factor)
 
 TR_max = np.max(fig1['data'][0]['y'])
 TR_min = np.min(fig1['data'][0]['y'])
@@ -221,7 +222,7 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
 
     tr = trace.slice(start_time, end_time)
-    #tr_rsam = tr.copy()
+    tr_rsam = tr.copy()
 
     if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
@@ -232,7 +233,7 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
     if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
 
         fig_1 = prepare_time_plot(tr, oversampling_factor)
-        fig_2 = prepare_rsam(tr)
+        fig_2 = prepare_rsam(tr_rsam, oversampling_factor)
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
         fig_1['layout'] = layout
         layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)

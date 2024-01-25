@@ -102,10 +102,15 @@ def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
     return fig
 
 
-def prepare_rsam(tr):
+def prepare_rsam(tr, oversampling_factor):
+    num_samples = len(tr.data)
+    target_num_samples = 1920
+    factor = int(num_samples / (target_num_samples * oversampling_factor))
     n_samples = int(tr.meta.sampling_rate * 60 * 10)  # Amount to 10 minutes
-    rsam = uniform_filter1d(abs(tr.data), size=n_samples)
-    df = pd.DataFrame({'data': rsam, 'times': tr.times('utcdatetime')})  # check for problems with date format
+    tr.data = uniform_filter1d(abs(tr.data), size=n_samples)
+    if factor > 1:
+        tr.decimate(factor, no_filter=True)  # tr.decimate necesita que se haga copy() antes para consercar los datos
+    df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
     xlabel = "Date"
     ylabel = "Amplitude"
     title = generate_title(tr, 'RSAM')
