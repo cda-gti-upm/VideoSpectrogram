@@ -43,10 +43,9 @@ def av_signal(tr, factor):
         tr_s.data[i] = avg
 '''
 
-def prepare_spectrogram(trace, start_time, end_time, s_min, s_max):
+def prepare_spectrogram(tr, s_min, s_max):
     print(f'Preparing figure...')
     print('Updating dates...')
-    tr = trace.slice(start_time, end_time)
     res = 1920
     num_samples = math.ceil(len(tr.data) / hop_length)
     if num_samples > (res * 10):
@@ -78,9 +77,9 @@ def prepare_spectrogram(trace, start_time, end_time, s_min, s_max):
     time_abs[0] = tr.stats.starttime + time_rel[0]
     for i in range(1, len(time_rel)):
         time_abs.append(tr.stats.starttime + time_rel[i])
-    title = generate_title(trace, 'Spectrogram')
+    title = generate_title(tr, 'Spectrogram')
     fig = px.imshow(S_db, x=time_abs, y=freqs, origin='lower',
-                    labels={'x': 'Time', 'y': 'Frequency (Hz)', 'color': 'Power (dB)'},
+                    labels={'y': 'Frequency (Hz)', 'color': 'Power (dB)'},
                     color_continuous_scale='jet', zmin=s_min, zmax=s_max)
     fig['layout']['yaxis']['autorange'] = False
     fig['layout']['yaxis']['range'] = [5, 125]
@@ -139,13 +138,24 @@ for i in range(0, 3):
     ST[i] = TR
 
 del TR
-starttime = ST[0].stats.starttime
-endtime = ST[0].stats.endtime
-TR = ST[0].slice(starttime, endtime)
+
+if initial_channel == 'X':
+    TR = ST[0].copy()
+elif initial_channel == 'Y':
+    TR = ST[1].copy()
+else:
+    TR = ST[2].copy()
+starttime = TR.stats.starttime
+endtime = TR.stats.endtime
+TR_SPEC = TR.copy()
 fig1 = prepare_time_plot(TR, oversampling_factor)
-fig2 = prepare_spectrogram(TR, starttime, endtime, s_min=75, s_max=130)
+fig2 = prepare_spectrogram(TR_SPEC, 75, 130)
+
+TR_max = np.max(fig1['data'][0]['y'])
+TR_min = np.min(fig1['data'][0]['y'])
 
 del TR
+del TR_SPEC
 
 # Creating app layout:
 
@@ -192,13 +202,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min',
                           type='number',
-                          value=None,
+                          value=TR_min,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max',
                           type='number',
-                          value=None,
+                          value=TR_max,
                           debounce=True
                       )],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
@@ -280,16 +290,16 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
             path = path_root + '_' + geo_sel + '_' + channels[j]
             print(path)
             tr = read_and_preprocessing(path, format_in, starttime, endtime, filter_50Hz_f)
-            ST[j] = tr
+            ST[j] = tr.copy()
 
         del tr
 
     if channel_selector == 'X':
-        trace = ST[0]
+        trace = ST[0].copy()
     elif channel_selector == 'Y':
-        trace = ST[1]
+        trace = ST[1].copy()
     else:
-        trace = ST[2]
+        trace = ST[2].copy()
 
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
@@ -308,7 +318,7 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
     tr_spec = tr.copy()
 
     if ctx.triggered_id in ['max', 'min', 'auto']:
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, tr, True)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
         fig_1['layout'] = layout
     elif ctx.triggered_id in ['max_freq', 'min_freq']:
         fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
@@ -317,8 +327,9 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
         fig_2['layout']['coloraxis']['cmin'] = s_min
     else:
         fig_1 = prepare_time_plot(tr=tr, oversampling_factor=oversampling_factor)
-        fig_2 = prepare_spectrogram(trace=tr_spec, start_time=start_time, end_time=end_time, s_min=s_min, s_max=s_max)
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, tr, True)
+        print(len(tr_spec))
+        fig_2 = prepare_spectrogram(tr=tr_spec, s_min=s_min, s_max=s_max)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
         fig_1['layout'] = layout
         fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
 

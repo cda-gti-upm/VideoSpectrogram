@@ -33,7 +33,7 @@ import os
 import signal
 import pyautogui
 import socket
-from seismic_dash_utils import read_and_preprocessing, open_browser, prepare_time_plot, update_layout, prepare_rsam
+from seismic_dash_utils import read_and_preprocessing, open_browser, prepare_time_plot, update_layout, prepare_time_plot_3_channels
 
 
 args = sys.argv
@@ -75,7 +75,7 @@ for i in range(0, 3):
     data_path = path_root + '_' + geophone + '_' + channels[i]
     print(data_path)
     TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
-    ST[i] = TR
+    ST[i] = TR.copy()
 
 del TR
 
@@ -86,9 +86,17 @@ TRACE_X = ST[0].slice(starttime, endtime)
 TRACE_Y = ST[1].slice(starttime, endtime)
 TRACE_Z = ST[2].slice(starttime, endtime)
 
-fig1 = prepare_time_plot(TRACE_X, oversampling_factor)
-fig2 = prepare_time_plot(TRACE_Y, oversampling_factor)
-fig3 = prepare_time_plot(TRACE_Z, oversampling_factor)
+fig1 = prepare_time_plot_3_channels(TRACE_X, oversampling_factor, 'X')
+fig2 = prepare_time_plot_3_channels(TRACE_Y, oversampling_factor, 'Y')
+fig3 = prepare_time_plot_3_channels(TRACE_Z, oversampling_factor, 'Z')
+
+
+TR_x_max = np.max(fig1['data'][0]['y'])
+TR_x_min = np.min(fig1['data'][0]['y'])
+TR_y_max = np.max(fig2['data'][0]['y'])
+TR_y_min = np.min(fig2['data'][0]['y'])
+TR_z_max = np.max(fig3['data'][0]['y'])
+TR_z_min = np.min(fig3['data'][0]['y'])
 
 del TRACE_X
 del TRACE_Y
@@ -125,13 +133,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min_x',
                           type='number',
-                          value=None,
+                          value=TR_x_min,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max_x',
                           type='number',
-                          value=None,
+                          value=TR_x_max,
                           debounce=True
                       )],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
@@ -141,13 +149,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min_y',
                           type='number',
-                          value=None,
+                          value=TR_y_min,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max_y',
                           type='number',
-                          value=None,
+                          value=TR_y_max,
                           debounce=True
                       )],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
@@ -157,13 +165,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min_z',
                           type='number',
-                          value=None,
+                          value=TR_z_min,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max_z',
                           type='number',
-                          value=None,
+                          value=TR_z_max,
                           debounce=True
                       )],
             style={'display': 'in-line-block'})],
@@ -217,7 +225,7 @@ def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata
             path = path_root + '_' + geo_sel + '_' + channels[j]
             print(path)
             tr = read_and_preprocessing(path, format_in, starttime, endtime, filter_50Hz_f)
-            ST[j] = tr
+            ST[j] = tr.copy()
 
         del tr
 
@@ -243,22 +251,23 @@ def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata
 
 
     if ctx.triggered_id in ['max_x', 'min_x', 'max_y', 'min_y', 'max_z', 'min_z', 'auto_x', 'auto_y', 'auto_z']:
-        layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x, tr_x, True)
+
+        layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x, fig_1)
         fig_1['layout'] = layout1
-        layout2 = update_layout(fig_2['layout'], min_y, max_y, auto_y, tr_y, True)
+        layout2 = update_layout(fig_2['layout'], min_y, max_y, auto_y, fig_2)
         fig_2['layout'] = layout2
-        layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z, tr_z, True)
+        layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z, fig_3)
         fig_3['layout'] = layout3
 
     else:
-        fig_1 = prepare_time_plot(tr_x, oversampling_factor)
-        fig_2 = prepare_time_plot(tr_y, oversampling_factor)
-        fig_3 = prepare_time_plot(tr_z, oversampling_factor)
-        layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x, tr_x, True)
+        fig_1 = prepare_time_plot_3_channels(tr_x, oversampling_factor, 'X')
+        fig_2 = prepare_time_plot_3_channels(tr_y, oversampling_factor, 'Y')
+        fig_3 = prepare_time_plot_3_channels(tr_z, oversampling_factor, 'Z')
+        layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x, fig_1)
         fig_1['layout'] = layout1
-        layout2 = update_layout(fig_2['layout'], min_y, max_y, auto_y, tr_y, True)
+        layout2 = update_layout(fig_2['layout'], min_y, max_y, auto_y, fig_2)
         fig_2['layout'] = layout2
-        layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z, tr_z, True)
+        layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z, fig_3)
         fig_3['layout'] = layout3
 
     return fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True}

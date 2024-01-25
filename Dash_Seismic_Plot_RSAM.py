@@ -21,7 +21,7 @@ import os
 import signal
 import pyautogui
 import socket
-from seismic_dash_utils import read_and_preprocessing, open_browser, prepare_time_plot, update_layout, prepare_rsam
+from seismic_dash_utils import read_and_preprocessing, open_browser, prepare_time_plot, update_layout, prepare_rsam, update_layout_rsam
 
 args = sys.argv
 geophone = args[1]
@@ -63,17 +63,26 @@ for i in range(0, 3):
     data_path = path_root + '_' + geophone + '_' + channels[i]
     print(data_path)
     TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
-    ST[i] = TR
+    ST[i] = TR.copy()
 
 del TR
-starttime = ST[0].stats.starttime
-endtime = ST[0].stats.endtime
-TR = ST[0].slice(starttime, endtime)
+if initial_channel == 'X':
+    TR = ST[0].copy()
+elif initial_channel == 'Y':
+    TR = ST[1].copy()
+else:
+    TR = ST[2].copy()
+starttime = TR.stats.starttime
+endtime = TR.stats.endtime
+
 fig1 = prepare_time_plot(TR, oversampling_factor)
-layout = update_layout(fig1['layout'], None, None, ['autorange'], TR, True)
+layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
 fig1['layout'] = layout
-print(fig1['layout'])
 fig2 = prepare_rsam(TR)
+
+TR_max = np.max(fig1['data'][0]['y'])
+TR_min = np.min(fig1['data'][0]['y'])
+
 del TR
 
 # Creating app layout:
@@ -121,13 +130,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min',
                           type='number',
-                          value=None,
+                          value=TR_min,
                           debounce=True),
                       ' ',
                       dcc.Input(
                           id='max',
                           type='number',
-                          value=None,
+                          value=TR_max,
                           debounce=True)],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
         html.Div(
@@ -189,14 +198,14 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
             path = path_root + '_' + geo_sel + '_' + channels[j]
             print(path)
             tr = read_and_preprocessing(path, format_in, starttime, endtime, filter_50Hz_f)
-            ST[j] = tr
+            ST[j] = tr.copy()
         del tr
     if channel_selector == 'X':
-        trace = ST[0]
+        trace = ST[0].copy()
     elif channel_selector == 'Y':
-        trace = ST[1]
+        trace = ST[1].copy()
     else:
-        trace = ST[2]
+        trace = ST[2].copy()
 
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
@@ -213,19 +222,20 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
 
     tr = trace.slice(start_time, end_time)
     #tr_rsam = tr.copy()
+
     if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, tr, True)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
         fig_1['layout'] = layout
-        layout_rsam = update_layout(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam, tr, False)
+        layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
         fig_2['layout'] = layout_rsam
 
     if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
 
         fig_1 = prepare_time_plot(tr, oversampling_factor)
         fig_2 = prepare_rsam(tr)
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, tr, True)
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
         fig_1['layout'] = layout
-        layout_rsam = update_layout(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam, tr, False)
+        layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
         fig_2['layout'] = layout_rsam
 
     return fig_1, fig_2, {'autosize': True}, {'autosize': True}
