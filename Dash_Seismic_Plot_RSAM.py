@@ -21,7 +21,8 @@ import os
 import signal
 import pyautogui
 import socket
-from seismic_dash_utils import read_and_preprocessing, open_browser, prepare_time_plot, update_layout, prepare_rsam, update_layout_rsam
+from seismic_dash_utils import (read_and_preprocessing, open_browser, prepare_time_plot,
+                                update_layout, prepare_rsam, update_layout_rsam, correct_data_anomalies)
 
 args = sys.argv
 geophone = args[1]
@@ -59,6 +60,7 @@ if filt_50Hz == 's':
 else:
     filter_50Hz_f = False
 
+filter_50Hz_f = False
 for i in range(0, 3):
     data_path = path_root + '_' + geophone + '_' + channels[i]
     print(data_path)
@@ -72,6 +74,7 @@ elif initial_channel == 'Y':
     TR = ST[1].copy()
 else:
     TR = ST[2].copy()
+correct_data_anomalies(ST)
 TR_RSAM = TR.copy()
 starttime = TR.stats.starttime
 endtime = TR.stats.endtime
@@ -201,6 +204,8 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
             tr = read_and_preprocessing(path, format_in, starttime, endtime, filter_50Hz_f)
             ST[j] = tr.copy()
         del tr
+        correct_data_anomalies(ST)
+
     if channel_selector == 'X':
         trace = ST[0].copy()
     elif channel_selector == 'Y':

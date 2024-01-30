@@ -4,36 +4,18 @@ Read datafiles of given locations (geophones) and channels and generate one inde
 one.
 """
 
-import os
-import librosa.display
-import matplotlib.dates
-from tqdm import tqdm
-import obspy
 from obspy.core import UTCDateTime
 import obspy.signal.filter
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
-from matplotlib.dates import DateFormatter
-from matplotlib.ticker import (MultipleLocator, AutoMinorLocator, AutoLocator, MaxNLocator)
-from utils import read_data_from_folder
 import numpy as np
-import argparse
-import yaml
-import pickle
-from scipy.ndimage import uniform_filter1d
-import plotly.express as px
-import pandas as pd
-from screeninfo import get_monitors
 from dash import Dash, dcc, html, Input, Output, ctx, State
-from datetime import date
 import sys
-import webbrowser
 from threading import Timer
 import os
 import signal
 import pyautogui
 import socket
-from seismic_dash_utils import read_and_preprocessing, open_browser, prepare_time_plot, update_layout, prepare_time_plot_3_channels
+from seismic_dash_utils import (read_and_preprocessing, open_browser, prepare_time_plot, update_layout,
+                                prepare_time_plot_3_channels, correct_data_anomalies)
 
 
 args = sys.argv
@@ -78,7 +60,7 @@ for i in range(0, 3):
     ST[i] = TR.copy()
 
 del TR
-
+correct_data_anomalies(ST)
 starttime = ST[0].stats.starttime
 endtime = ST[0].stats.endtime
 
@@ -228,6 +210,7 @@ def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata
             ST[j] = tr.copy()
 
         del tr
+        correct_data_anomalies(ST)
 
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)

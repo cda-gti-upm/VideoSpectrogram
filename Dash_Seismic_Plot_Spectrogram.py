@@ -21,7 +21,8 @@ from threading import Timer
 import os
 import signal
 import pyautogui
-from seismic_dash_utils import read_and_preprocessing, open_browser, generate_title, prepare_time_plot, update_layout
+from seismic_dash_utils import (read_and_preprocessing, open_browser, generate_title, prepare_time_plot,
+                                update_layout, correct_data_anomalies)
 import socket
 """
 Functions
@@ -138,7 +139,7 @@ for i in range(0, 3):
     ST[i] = TR
 
 del TR
-
+correct_data_anomalies(ST)
 if initial_channel == 'X':
     TR = ST[0].copy()
 elif initial_channel == 'Y':
@@ -293,6 +294,7 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
             ST[j] = tr.copy()
 
         del tr
+        correct_data_anomalies(ST)
 
     if channel_selector == 'X':
         trace = ST[0].copy()

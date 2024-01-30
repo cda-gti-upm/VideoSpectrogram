@@ -1,11 +1,14 @@
-import obspy
 from utils import read_data_from_folder
 import obspy.signal.filter
 import webbrowser
 import pandas as pd
 import plotly.express as px
 from scipy.ndimage import uniform_filter1d
+import obspy
 import numpy as np
+from tqdm import tqdm
+import math
+
 
 def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
     # Read data
@@ -19,7 +22,7 @@ def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
 
     # Merge traces
     print(f'Merging data ...')
-    stream.merge(method=0, fill_value=0)
+    stream.merge(method=0, fill_value=0.)
     trace = stream[0]
 
     # Filtering 50 Hz
@@ -155,3 +158,67 @@ def update_layout_rsam(layout, min_y, max_y, auto_y):
 
     return layout
 
+
+def detect_anomalies(stream):
+    # Detection of anomalous values
+    for i, tr in enumerate(tqdm(stream)):
+        # Detection of not-a-number values
+        indnan = np.isnan(tr.data)
+        if any(indnan):
+            print(f'List of indexes containing a not-a-number value (NaN) in Trace {i}:')
+            print(f'Indexes: {np.where(indnan)}')
+        """
+        else:
+            print(f'Trace {i} does not contain not-a-number values (NaN)')
+        """
+
+        # Detection of infinite values
+        indinf = np.isinf(tr.data)
+        if any(indinf):
+            print(f'List of indexes containing a infinite value (inf) in Trace {i}:')
+            print(f'Indexes: {np.where(indinf)}')
+        """
+        else:
+            print(f'Trace {i} does not contain infinite values (inf)')
+        """
+
+
+def correct_data_anomalies(stream):
+    # Correction of anomalous values
+    for i, tr in enumerate(tqdm(stream)):
+        # Correction of not-a-number values
+        indnan = np.isnan(tr.data)
+        tr.data[indnan] = 0
+
+        # Correction of infinite values
+        indinf = np.isinf(tr.data)
+        tr.data[indinf] = 0
+
+
+def av_signal(df, factor):
+    tr = df.data
+    times = df.times
+    length = float(len(tr))
+    factor = float(factor)
+    interval_length = math.floor(length / factor)
+    n_intervals = math.ceil(length / interval_length)
+    df_s = df.rolling(2)['data'].mean()
+    print(df_s)
+    """
+    tr_s = obspy.core.Trace(data=np.arange(0, n_intervals))
+    for i in range(0, n_intervals):
+        avg = 0.0
+        samples = 0
+        for j in range(i * interval_length, i * interval_length + interval_length):
+
+            if j >= length:
+                break
+            samples += 1
+            avg += tr.data[j]
+
+
+        avg = avg / samples
+        tr_s.times[i] = tr.times[i * interval_length]
+        tr_s.data[i] = avg
+        """
+    return df_s
