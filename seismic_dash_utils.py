@@ -1,4 +1,4 @@
-from utils import read_data_from_folder
+import os
 import obspy.signal.filter
 import webbrowser
 import pandas as pd
@@ -10,10 +10,36 @@ from tqdm import tqdm
 import math
 
 
+def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, verbose=True):
+    # Read all data files from directory
+    dirlist = sorted(os.listdir(path_data))
+    first_file = True
+    st = []
+    i = 0
+    for file in tqdm(dirlist):
+        file = os.path.join(path_data, file)
+        if os.path.isfile(file):
+            try:
+                if first_file:
+                    st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
+                    if filter_50Hz_f:
+                        st[0].data = obspy.signal.filter.bandstop(st[0].data, 49, 51, st[0].meta.sampling_rate, corners=8,
+                                                                  zerophase=True)
+                    first_file = False
+                else:
+                    new_st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
+                    if filter_50Hz_f:
+                        new_st[0].data = obspy.signal.filter.bandstop(new_st[0].data, 49, 51, new_st[0].meta.sampling_rate, corners=8,
+                                                                      zerophase=True)
+                    st += new_st
+            except Exception as e:
+                if verbose:
+                    print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
+    return st
 def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
     # Read data
     print(f'Reading data ...')
-    stream = read_data_from_folder(path, in_format, start, end)
+    stream = read_data_from_folder(path, in_format, start, end, filter_50Hz_f)
 
     # Sort data
     print(f'Sorting data ...')
@@ -22,14 +48,10 @@ def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
 
     # Merge traces
     print(f'Merging data ...')
-    stream.merge(method=0, fill_value=0.)
+    stream.merge(method=0, fill_value=0)
     trace = stream[0]
-
-    # Filtering 50 Hz
-    if filter_50Hz_f:
-        print(f'Filtering 50 Hz signal ...')
-        trace.data = obspy.signal.filter.bandstop(trace.data, 49, 51, trace.meta.sampling_rate, corners=8,
-                                                  zerophase=True)
+    del stream
+    trace = correct_data_anomalies(trace)
 
     return trace
 
@@ -43,11 +65,12 @@ def generate_title(tr, prefix_name):
     return title
 
 
-def prepare_time_plot(tr, oversampling_factor):
+def prepare_time_plot(trace, oversampling_factor):
     print(f'Preparing figure...')
     print('Updating dates...')
     # Decimation
     print(f'Decimation...')
+    tr = trace.copy()
     num_samples = len(tr.data)
     prefix_name = 'Seismic amplitude'
     print(f'{prefix_name} trace has {len(tr.data)} samples...')
@@ -69,6 +92,7 @@ def prepare_time_plot(tr, oversampling_factor):
     fig['layout']['margin'] = {'t': 30, 'b': 30}
     fig['layout']['xaxis']['automargin'] = False
     fig['layout']['yaxis']['autorange'] = True
+    del tr
     return fig
 
 
@@ -105,14 +129,8 @@ def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
     return fig
 
 
-def prepare_rsam(tr, oversampling_factor):
-    num_samples = len(tr.data)
-    target_num_samples = 1920
-    factor = int(num_samples / (target_num_samples * oversampling_factor))
-    n_samples = int(tr.meta.sampling_rate * 60 * 10)  # Amount to 10 minutes
-    tr.data = uniform_filter1d(abs(tr.data), size=n_samples)
-    if factor > 1:
-        tr.decimate(factor, no_filter=True)  # tr.decimate necesita que se haga copy() antes para consercar los datos
+def prepare_rsam(tr):
+
     df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
     xlabel = "Date"
     ylabel = "Amplitude"
@@ -160,6 +178,7 @@ def update_layout_rsam(layout, min_y, max_y, auto_y):
 
 
 def detect_anomalies(stream):
+    abs_th = 433000
     # Detection of anomalous values
     for i, tr in enumerate(tqdm(stream)):
         # Detection of not-a-number values
@@ -182,18 +201,34 @@ def detect_anomalies(stream):
             print(f'Trace {i} does not contain infinite values (inf)')
         """
 
+        # Detection of very large values
+        indlarge = abs(tr.data) > abs_th
+        if any(indlarge):
+            print(f'Indexes: {np.where(indlarge)}')
+            print(f'Values: {tr.data[indlarge]}')
+        """
+        else:
+            print(f'Trace {i} does not contain large values')
+        """
 
-def correct_data_anomalies(stream):
+
+def correct_data_anomalies(tr):
     # Correction of anomalous values
-    for i, tr in enumerate(tqdm(stream)):
-        # Correction of not-a-number values
-        indnan = np.isnan(tr.data)
-        tr.data[indnan] = 0
 
-        # Correction of infinite values
-        indinf = np.isinf(tr.data)
-        tr.data[indinf] = 0
+    abs_th = 500000
+    # Correction of not-a-number values
+    indnan = np.isnan(tr.data)
+    tr.data[indnan] = 0
 
+    # Correction of infinite values
+    indinf = np.isinf(tr.data)
+    tr.data[indinf] = 0
+
+    # Correction of very large values
+    indlarge = abs(tr.data) > abs_th
+    tr.data[indlarge] = 0
+
+    return tr
 
 def av_signal(df, factor):
     tr = df.data

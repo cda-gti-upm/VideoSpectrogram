@@ -22,7 +22,7 @@ import signal
 import pyautogui
 import socket
 from seismic_dash_utils import (read_and_preprocessing, open_browser, prepare_time_plot,
-                                update_layout, prepare_rsam, update_layout_rsam, correct_data_anomalies)
+                                update_layout, prepare_rsam, update_layout_rsam, detect_anomalies, correct_data_anomalies)
 
 args = sys.argv
 geophone = args[1]
@@ -32,15 +32,13 @@ end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
 
-oversampling_factor=10
+oversampling_factor = 10
 
 sock = socket.socket()
 sock.bind(('', 0))
 port = sock.getsockname()[1]
 del sock
 
-ST = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
-channels = ['X', 'Y', 'Z']
 
 styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
 path_root = './data/CSIC_LaPalma'
@@ -60,34 +58,25 @@ if filt_50Hz == 's':
 else:
     filter_50Hz_f = False
 
-filter_50Hz_f = False
-for i in range(0, 3):
-    data_path = path_root + '_' + geophone + '_' + channels[i]
-    print(data_path)
-    TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
-    ST[i] = TR.copy()
 
-del TR
-if initial_channel == 'X':
-    TR = ST[0].copy()
-elif initial_channel == 'Y':
-    TR = ST[1].copy()
-else:
-    TR = ST[2].copy()
-correct_data_anomalies(ST)
-TR_RSAM = TR.copy()
+data_path = path_root + '_' + geophone + '_' + initial_channel
+print(data_path)
+TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
+
+TR = correct_data_anomalies(TR)
+
+tr = TR.copy()
 starttime = TR.stats.starttime
 endtime = TR.stats.endtime
-
-fig1 = prepare_time_plot(TR, oversampling_factor)
+fig1 = prepare_time_plot(tr, oversampling_factor)
 layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
 fig1['layout'] = layout
-fig2 = prepare_rsam(TR, oversampling_factor)
-
+fig2 = prepare_rsam(tr)
 TR_max = np.max(fig1['data'][0]['y'])
 TR_min = np.min(fig1['data'][0]['y'])
+del tr
 
-del TR
+
 
 # Creating app layout:
 
@@ -184,34 +173,25 @@ app.layout = html.Div([
     Input('kill_button', 'n_clicks'),
     Input('geophone_selector', 'value'),
     State('time_plot', 'figure'),
-    State('RSAM', 'figure')
+    State('RSAM', 'figure'),
+    prevent_initial_call=True
 )
 def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
                 min_y_rsam, auto_y, auto_y_rsam, button, geo_sel, fig_1, fig_2):
+    global TR
     print(f'El trigger es {ctx.triggered_id}')
     if ctx.triggered_id == 'kill_button':
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
-    if ctx.triggered_id == 'geophone_selector':
-        st_length = len(ST[0])
-        ST[0].data = np.zeros(st_length)
-        ST[1].data = np.zeros(st_length)
-        ST[2].data = np.zeros(st_length)
+    if ctx.triggered_id in ['geophone_selector', 'channel_selector']:
+        st_length = len(TR)
+        TR.data = np.zeros(st_length)
         for j in range(0, 3):
-            path = path_root + '_' + geo_sel + '_' + channels[j]
+            path = path_root + '_' + geo_sel + '_' + channel_selector
             print(path)
-            tr = read_and_preprocessing(path, format_in, starttime, endtime, filter_50Hz_f)
-            ST[j] = tr.copy()
-        del tr
-        correct_data_anomalies(ST)
+            TR = read_and_preprocessing(path, format_in, starttime, endtime, filter_50Hz_f)
 
-    if channel_selector == 'X':
-        trace = ST[0].copy()
-    elif channel_selector == 'Y':
-        trace = ST[1].copy()
-    else:
-        trace = ST[2].copy()
 
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
@@ -226,8 +206,6 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
 
-    tr = trace.slice(start_time, end_time)
-    tr_rsam = tr.copy()
 
     if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
@@ -236,9 +214,12 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
         fig_2['layout'] = layout_rsam
 
     if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
-
+        tr = TR.slice(start_time, end_time)
         fig_1 = prepare_time_plot(tr, oversampling_factor)
-        fig_2 = prepare_rsam(tr_rsam, oversampling_factor)
+        del tr
+        tr_rsam = TR.slice(start_time, end_time)
+        fig_2 = prepare_rsam(tr_rsam)
+        del tr_rsam
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
         fig_1['layout'] = layout
         layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
