@@ -63,8 +63,6 @@ data_path = path_root + '_' + geophone + '_' + initial_channel
 print(data_path)
 TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
 
-TR = correct_data_anomalies(TR)
-
 tr = TR.copy()
 starttime = TR.stats.starttime
 endtime = TR.stats.endtime
@@ -216,10 +214,8 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
     if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
         tr = TR.slice(start_time, end_time)
         fig_1 = prepare_time_plot(tr, oversampling_factor)
+        fig_2 = prepare_rsam(tr)
         del tr
-        tr_rsam = TR.slice(start_time, end_time)
-        fig_2 = prepare_rsam(tr_rsam)
-        del tr_rsam
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
         fig_1['layout'] = layout
         layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)

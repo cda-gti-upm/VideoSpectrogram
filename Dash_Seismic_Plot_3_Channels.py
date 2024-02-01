@@ -60,7 +60,7 @@ for i in range(0, 3):
     ST[i] = TR.copy()
 
 del TR
-correct_data_anomalies(ST)
+
 starttime = ST[0].stats.starttime
 endtime = ST[0].stats.endtime
 
@@ -210,7 +210,6 @@ def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata
             ST[j] = tr.copy()
 
         del tr
-        correct_data_anomalies(ST)
 
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)

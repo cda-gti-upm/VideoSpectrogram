@@ -1,4 +1,6 @@
 import os
+import time
+
 import obspy.signal.filter
 import webbrowser
 import pandas as pd
@@ -10,28 +12,20 @@ from tqdm import tqdm
 import math
 
 
-def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, verbose=True):
+def read_data_from_folder(path_data, format, starttime, endtime, verbose=True):
     # Read all data files from directory
     dirlist = sorted(os.listdir(path_data))
     first_file = True
     st = []
-    i = 0
     for file in tqdm(dirlist):
         file = os.path.join(path_data, file)
         if os.path.isfile(file):
             try:
                 if first_file:
                     st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
-                    if filter_50Hz_f:
-                        st[0].data = obspy.signal.filter.bandstop(st[0].data, 49, 51, st[0].meta.sampling_rate, corners=8,
-                                                                  zerophase=True)
                     first_file = False
                 else:
-                    new_st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
-                    if filter_50Hz_f:
-                        new_st[0].data = obspy.signal.filter.bandstop(new_st[0].data, 49, 51, new_st[0].meta.sampling_rate, corners=8,
-                                                                      zerophase=True)
-                    st += new_st
+                    st += obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
             except Exception as e:
                 if verbose:
                     print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
@@ -51,6 +45,11 @@ def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
     stream.merge(method=0, fill_value=0)
     trace = stream[0]
     del stream
+
+    if filter_50Hz_f:
+        print(f'Filtering 50 Hz ...')
+        trace.data = obspy.signal.filter.bandstop(trace.data, 49, 51, trace.meta.sampling_rate, corners=8,
+                                                  zerophase=True)
     trace = correct_data_anomalies(trace)
 
     return trace
@@ -65,12 +64,11 @@ def generate_title(tr, prefix_name):
     return title
 
 
-def prepare_time_plot(trace, oversampling_factor):
+def prepare_time_plot(tr, oversampling_factor):
     print(f'Preparing figure...')
     print('Updating dates...')
     # Decimation
     print(f'Decimation...')
-    tr = trace.copy()
     num_samples = len(tr.data)
     prefix_name = 'Seismic amplitude'
     print(f'{prefix_name} trace has {len(tr.data)} samples...')
@@ -112,7 +110,10 @@ def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
 
     # Plotting and formatting
     print(f'Plotting and formating {prefix_name}...')
+
+
     df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
+
     xlabel = "Date"
     ylabel = f"Amplitude {channel}"
     fig = px.line(df, x="times", y="data", labels={'times': '', 'data': ylabel})
@@ -130,7 +131,8 @@ def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
 
 
 def prepare_rsam(tr):
-
+    n_samples = int(tr.meta.sampling_rate * 60 * 10)  # Amount to 10 minutes
+    tr.data = uniform_filter1d(abs(tr.data), size=n_samples)
     df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
     xlabel = "Date"
     ylabel = "Amplitude"
@@ -230,17 +232,16 @@ def correct_data_anomalies(tr):
 
     return tr
 
-def av_signal(df, factor):
-    tr = df.data
-    times = df.times
-    length = float(len(tr))
-    factor = float(factor)
-    interval_length = math.floor(length / factor)
-    n_intervals = math.ceil(length / interval_length)
-    df_s = df.rolling(2)['data'].mean()
-    print(df_s)
-    """
-    tr_s = obspy.core.Trace(data=np.arange(0, n_intervals))
+def av_signal(tr, factor):
+
+    length = len(tr)
+
+    n_intervals = math.ceil(length / factor)
+    interval_length = factor
+
+
+    data = np.arange(0., n_intervals)
+
     for i in range(0, n_intervals):
         avg = 0.0
         samples = 0
@@ -253,7 +254,12 @@ def av_signal(df, factor):
 
 
         avg = avg / samples
-        tr_s.times[i] = tr.times[i * interval_length]
-        tr_s.data[i] = avg
-        """
-    return df_s
+        data[i] = avg
+        print(data[i])
+
+    tr.decimate(factor)
+    df = pd.DataFrame({'data': data, 'times': tr.times})  # check for problems with date format
+    return df
+
+tr = obspy.Trace(np.array([1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12.,13.,14.,15.]))
+av_signal(tr,2)
