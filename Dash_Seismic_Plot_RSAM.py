@@ -32,7 +32,7 @@ end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
 
-oversampling_factor = 10
+oversampling_factor = 5
 
 sock = socket.socket()
 sock.bind(('', 0))
@@ -70,8 +70,7 @@ fig1 = prepare_time_plot(tr, oversampling_factor)
 layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
 fig1['layout'] = layout
 fig2 = prepare_rsam(tr)
-TR_max = np.max(fig1['data'][0]['y'])
-TR_min = np.min(fig1['data'][0]['y'])
+
 del tr
 
 
@@ -112,6 +111,8 @@ app.layout = html.Div([
              debounce=True,
              style={'display': 'inline-block'}),
          '  ',
+         html.Button('Read new data', id='update', n_clicks=0),
+         '  ',
          html.Button('Close app', id='kill_button', n_clicks=0)]
     ),
     html.Div(children=[
@@ -121,13 +122,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min',
                           type='number',
-                          value=TR_min,
+                          value=0,
                           debounce=True),
                       ' ',
                       dcc.Input(
                           id='max',
                           type='number',
-                          value=TR_max,
+                          value=0,
                           debounce=True)],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
         html.Div(
@@ -157,7 +158,7 @@ app.layout = html.Div([
     Output('RSAM', 'figure'),
     Output('time_plot', 'relayoutData'),
     Output('RSAM', 'relayoutData'),
-    Input('channel_selector', 'value'),
+    State('channel_selector', 'value'),
     Input('startdate', 'value'),
     Input('enddate', 'value'),
     Input('time_plot', 'relayoutData'),
@@ -169,26 +170,26 @@ app.layout = html.Div([
     Input('auto', 'value'),
     Input('auto_RSAM', 'value'),
     Input('kill_button', 'n_clicks'),
-    Input('geophone_selector', 'value'),
+    State('geophone_selector', 'value'),
+    Input('update', 'n_clicks'),
     State('time_plot', 'figure'),
     State('RSAM', 'figure'),
-    prevent_initial_call=True
 )
 def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
-                min_y_rsam, auto_y, auto_y_rsam, button, geo_sel, fig_1, fig_2):
+                min_y_rsam, auto_y, auto_y_rsam, button, geo_sel, update, fig_1, fig_2):
     global TR
     print(f'El trigger es {ctx.triggered_id}')
     if ctx.triggered_id == 'kill_button':
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
-    if ctx.triggered_id in ['geophone_selector', 'channel_selector']:
+    if ctx.triggered_id in ['update']:
         st_length = len(TR)
         TR.data = np.zeros(st_length)
-        for j in range(0, 3):
-            path = path_root + '_' + geo_sel + '_' + channel_selector
-            print(path)
-            TR = read_and_preprocessing(path, format_in, starttime, endtime, filter_50Hz_f)
+
+        path = path_root + '_' + geo_sel + '_' + channel_selector
+        print(path)
+        TR = read_and_preprocessing(path, format_in, UTCDateTime(startdate), UTCDateTime(enddate), filter_50Hz_f)
 
 
     start_time = UTCDateTime(startdate)
@@ -211,15 +212,15 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
         layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
         fig_2['layout'] = layout_rsam
 
-    if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
+    if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM', None]:
         tr = TR.slice(start_time, end_time)
         fig_1 = prepare_time_plot(tr, oversampling_factor)
         fig_2 = prepare_rsam(tr)
-        del tr
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
-        fig_1['layout'] = layout
-        layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
-        fig_2['layout'] = layout_rsam
+        if len(tr) != 0:
+            layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
+            fig_1['layout'] = layout
+            layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
+            fig_2['layout'] = layout_rsam
 
     return fig_1, fig_2, {'autosize': True}, {'autosize': True}
 

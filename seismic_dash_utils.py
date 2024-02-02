@@ -1,6 +1,6 @@
 import os
 import time
-
+from obspy.core import UTCDateTime
 import obspy.signal.filter
 import webbrowser
 import pandas as pd
@@ -14,18 +14,28 @@ import math
 
 def read_data_from_folder(path_data, format, starttime, endtime, verbose=True):
     # Read all data files from directory
+    if starttime is None:
+        starttime = UTCDateTime('1980-01-01')
+    if endtime is None:
+        endtime = UTCDateTime('2050-01-01')
+
+    print(f'Reading from {starttime} to {endtime}')
     dirlist = sorted(os.listdir(path_data))
     first_file = True
-    st = []
+    st = obspy.Stream()
     for file in tqdm(dirlist):
         file = os.path.join(path_data, file)
         if os.path.isfile(file):
             try:
                 if first_file:
-                    st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
-                    first_file = False
+                    st_head = obspy.read(file, format=format, headonly=True)
+                    if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime):
+                        st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
+                        first_file = False
                 else:
-                    st += obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
+                    st_head = obspy.read(file, format=format, headonly=True)
+                    if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime):
+                        st += obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
             except Exception as e:
                 if verbose:
                     print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
@@ -38,19 +48,23 @@ def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
     # Sort data
     print(f'Sorting data ...')
     stream.sort(['starttime'])
-    print(f'Data spans from {stream[0].stats.starttime} until {stream[-1].stats.endtime}')
+    try:
+        print(f'Data spans from {stream[0].stats.starttime} until {stream[-1].stats.endtime}')
 
-    # Merge traces
-    print(f'Merging data ...')
-    stream.merge(method=0, fill_value=0)
-    trace = stream[0]
-    del stream
+        # Merge traces
+        print(f'Merging data ...')
+        stream.merge(method=0, fill_value=0)
+        trace = stream[0]
+        del stream
 
-    if filter_50Hz_f:
-        print(f'Filtering 50 Hz ...')
-        trace.data = obspy.signal.filter.bandstop(trace.data, 49, 51, trace.meta.sampling_rate, corners=8,
+        if filter_50Hz_f:
+            print(f'Filtering 50 Hz ...')
+            trace.data = obspy.signal.filter.bandstop(trace.data, 49, 51, trace.meta.sampling_rate, corners=8,
                                                   zerophase=True)
-    trace = correct_data_anomalies(trace)
+        trace = correct_data_anomalies(trace)
+    except Exception as e:
+        print('No data is available')
+        trace = obspy.Trace()
 
     return trace
 
@@ -65,32 +79,40 @@ def generate_title(tr, prefix_name):
 
 
 def prepare_time_plot(tr, oversampling_factor):
-    print(f'Preparing figure...')
-    print('Updating dates...')
-    # Decimation
-    print(f'Decimation...')
-    num_samples = len(tr.data)
-    prefix_name = 'Seismic amplitude'
-    print(f'{prefix_name} trace has {len(tr.data)} samples...')
-    target_num_samples = 1920
-    factor = int(num_samples / (target_num_samples * oversampling_factor))
-    if factor > 1:
-        tr.decimate(factor, no_filter=True) #tr.decimate necesita que se haga copy() antes para consercar los datos
-        print(f'{prefix_name} trace reduced to {len(tr.data)} samples...')
+    if len(tr) != 0:
+        print(f'Preparing figure...')
+        print('Updating dates...')
+        # Decimation
+        print(f'Decimation...')
+        num_samples = len(tr.data)
+        prefix_name = 'Seismic amplitude'
+        print(f'{prefix_name} trace has {len(tr.data)} samples...')
+        target_num_samples = 1920
+        factor = int(num_samples / (target_num_samples * oversampling_factor))
+        if factor > 1:
+            '''
+            df = av_signal(tr, factor)
+            print(f'{prefix_name} trace reduced to {len(df["data"])} samples...')
+            '''
+            tr.decimate(factor,no_filter=True)  # tr.decimate necesita que se haga copy() antes para consercar los datos
+            print(f'{prefix_name} trace reduced to {len(tr.data)} samples...')
+            df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})
+        else:
+            df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
 
-    # Plotting and formatting
-    print(f'Plotting and formating {prefix_name}...')
-    df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
-    xlabel = "Date"
-    ylabel = "Amplitude"
-    title = generate_title(tr, prefix_name)
+        # Plotting and formatting
+        print(f'Plotting and formating {prefix_name}...')
+        xlabel = "Date"
+        ylabel = "Amplitude"
+        title = generate_title(tr, prefix_name)
 
-    fig = px.line(df, x="times", y="data", labels={'times': '', 'data': ylabel})
-    fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
-    fig['layout']['margin'] = {'t': 30, 'b': 30}
-    fig['layout']['xaxis']['automargin'] = False
-    fig['layout']['yaxis']['autorange'] = True
-    del tr
+        fig = px.line(df, x="times", y="data", labels={'times': '', 'data': ylabel})
+        fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
+        fig['layout']['margin'] = {'t': 30, 'b': 30}
+        fig['layout']['xaxis']['automargin'] = False
+        fig['layout']['yaxis']['autorange'] = True
+    else:
+        fig = px.line()
     return fig
 
 
@@ -255,11 +277,24 @@ def av_signal(tr, factor):
 
         avg = avg / samples
         data[i] = avg
-        print(data[i])
 
-    tr.decimate(factor)
-    df = pd.DataFrame({'data': data, 'times': tr.times})  # check for problems with date format
+
+    tr.decimate(factor, no_filter=True)
+    df = pd.DataFrame({'data': data, 'times': tr.times('utcdatetime')})  # check for problems with date format
     return df
+"""
+tr = obspy.Trace(np.arange(50))
+df = av_signal(tr,8)
+print(df['data'])
+print(len(df['data']))
 
-tr = obspy.Trace(np.array([1.,2.,3.,4.,5.,6.,7.,8.,9.,10.,11.,12.,13.,14.,15.]))
-av_signal(tr,2)
+
+
+path_data = './data/CSIC_LaPalma_Geophone1_X'
+format = 'PICKLE'
+starttime = UTCDateTime('2021-10-01')
+endtime = UTCDateTime('2021-10-03')
+
+st = read_data_from_folder(path_data,format,starttime, endtime)
+"""
+

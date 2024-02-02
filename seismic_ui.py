@@ -20,7 +20,7 @@ start = input('Seleccione instante inicial:  formato yyyy-mm-dd hh:mm:ss o dejar
 end = input('Seleccione instante final:  formato yyyy-mm-dd hh:mm:ss o dejar vacío para ver todo\n')
 # filter_50Hz_f = input('¿Desea filtrar la señal de 50 Hz? (s ó n)\n')
 # formato = input('Formato de los datos: (PICKLE)\n')
-filter_50Hz_f = 'n'
+filter_50Hz_f = 's'
 formato = 'PICKLE'
 if vis_type == '1':
     proc = subprocess.run(['python', 'Dash_Seismic_Plot_RSAM.py', geo, channel, start, end, filter_50Hz_f, formato])
