@@ -67,8 +67,9 @@ tr = TR.copy()
 starttime = TR.stats.starttime
 endtime = TR.stats.endtime
 fig1 = prepare_time_plot(tr, oversampling_factor)
-layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
-fig1['layout'] = layout
+if len(tr) != 0:
+    layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
+    fig1['layout'] = layout
 fig2 = prepare_rsam(tr)
 
 del tr
