@@ -12,7 +12,7 @@ from tqdm import tqdm
 import math
 
 
-def read_data_from_folder(path_data, format, starttime, endtime, verbose=True):
+def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, verbose=True, ):
     # Read all data files from directory
     if starttime is None:
         starttime = UTCDateTime('1980-01-01')
@@ -21,6 +21,7 @@ def read_data_from_folder(path_data, format, starttime, endtime, verbose=True):
 
     print(f'Reading from {starttime} to {endtime}')
     dirlist = sorted(os.listdir(path_data))
+    print(f'Files found: {dirlist}')
     first_file = True
     st = obspy.Stream()
     for file in tqdm(dirlist):
@@ -31,11 +32,19 @@ def read_data_from_folder(path_data, format, starttime, endtime, verbose=True):
                     st_head = obspy.read(file, format=format, headonly=True)
                     if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime):
                         st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
+                        if filter_50Hz_f:
+                            print('Filtering 50 Hz')
+                            st[0].data = obspy.signal.filter.bandstop(st[0].data, 49, 51, st[0].meta.sampling_rate, corners=8,
+                                                      zerophase=True)
                         first_file = False
                 else:
                     st_head = obspy.read(file, format=format, headonly=True)
                     if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime):
-                        st += obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
+                        new_st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
+                        if filter_50Hz_f:
+                            new_st[0].data = obspy.signal.filter.bandstop(new_st[0].data, 49, 51, new_st[0].meta.sampling_rate, corners=8,
+                                                      zerophase=True)
+                        st += new_st
             except Exception as e:
                 if verbose:
                     print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
@@ -56,14 +65,15 @@ def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
         stream.merge(method=0, fill_value=0)
         trace = stream[0]
         del stream
-
+        '''
         if filter_50Hz_f:
             print(f'Filtering 50 Hz ...')
             trace.data = obspy.signal.filter.bandstop(trace.data, 49, 51, trace.meta.sampling_rate, corners=8,
-                                                  zerophase=True)
+                                                      zerophase=True)
+        '''
         trace = correct_data_anomalies(trace)
     except Exception as e:
-        print('No data is available')
+        print('Error reading data')
         trace = obspy.Trace()
 
     return trace
@@ -94,7 +104,7 @@ def prepare_time_plot(tr, oversampling_factor):
             df = av_signal(tr, factor)
             print(f'{prefix_name} trace reduced to {len(df["data"])} samples...')
             '''
-            tr.decimate(factor,no_filter=True)  # tr.decimate necesita que se haga copy() antes para consercar los datos
+            tr.decimate(factor, no_filter=True)  # tr.decimate necesita que se haga copy() antes para consercar los datos
             print(f'{prefix_name} trace reduced to {len(tr.data)} samples...')
             df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})
         else:

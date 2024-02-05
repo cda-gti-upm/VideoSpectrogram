@@ -159,9 +159,11 @@ app.layout = html.Div([
     Output('RSAM', 'figure'),
     Output('time_plot', 'relayoutData'),
     Output('RSAM', 'relayoutData'),
+    Output('startdate', 'value'),
+    Output('enddate', 'value'),
     State('channel_selector', 'value'),
-    Input('startdate', 'value'),
-    Input('enddate', 'value'),
+    State('startdate', 'value'),
+    State('enddate', 'value'),
     Input('time_plot', 'relayoutData'),
     Input('RSAM', 'relayoutData'),
     Input('max', 'value'),
@@ -185,8 +187,8 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
     if ctx.triggered_id in ['update']:
-        st_length = len(TR)
-        TR.data = np.zeros(st_length)
+        length = len(TR)
+        TR.data = np.zeros(length)
 
         path = path_root + '_' + geo_sel + '_' + channel_selector
         print(path)
@@ -217,13 +219,15 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
         tr = TR.slice(start_time, end_time)
         fig_1 = prepare_time_plot(tr, oversampling_factor)
         fig_2 = prepare_rsam(tr)
+        start_time = TR.stats.starttime
+        end_time = TR.stats.endtime
         if len(tr) != 0:
             layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
             fig_1['layout'] = layout
             layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
             fig_2['layout'] = layout_rsam
 
-    return fig_1, fig_2, {'autosize': True}, {'autosize': True}
+    return fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
 # Main program
