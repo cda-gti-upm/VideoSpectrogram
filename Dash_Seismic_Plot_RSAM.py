@@ -32,7 +32,7 @@ end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
 
-oversampling_factor = 5
+oversampling_factor = 50
 
 sock = socket.socket()
 sock.bind(('', 0))

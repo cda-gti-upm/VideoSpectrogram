@@ -113,13 +113,14 @@ def prepare_time_plot(tr, oversampling_factor):
         target_num_samples = 1920
         factor = int(num_samples / (target_num_samples * oversampling_factor))
         if factor > 1:
-            '''
+
             df = av_signal(tr, factor)
             print(f'{prefix_name} trace reduced to {len(df["data"])} samples...')
-            '''
+            """
             tr.decimate(factor, no_filter=True)  # tr.decimate necesita que se haga copy() antes para consercar los datos
             print(f'{prefix_name} trace reduced to {len(tr.data)} samples...')
             df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})
+            """
         else:
             df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
 
@@ -278,29 +279,20 @@ def correct_data_anomalies(tr):
     return tr
 
 def av_signal(tr, factor):
-
     length = len(tr)
-
     n_intervals = math.ceil(length / factor)
     interval_length = factor
-
-
     data = np.arange(0., n_intervals)
 
     for i in range(0, n_intervals):
-        avg = 0.0
-        samples = 0
+        max_value = 0
         for j in range(i * interval_length, i * interval_length + interval_length):
-
             if j >= length:
                 break
-            samples += 1
-            avg += tr.data[j]
+            if abs(tr.data[j]) > max_value:
+                max_value = tr.data[j]
 
-
-        avg = avg / samples
-        data[i] = avg
-
+        data[i] = max_value
 
     tr.decimate(factor, no_filter=True)
     df = pd.DataFrame({'data': data, 'times': tr.times('utcdatetime')})  # check for problems with date format
