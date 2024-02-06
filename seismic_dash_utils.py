@@ -12,7 +12,7 @@ from tqdm import tqdm
 import math
 
 
-def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, verbose=True, ):
+def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, verbose=True):
     # Read all data files from directory
     if starttime is None:
         starttime = UTCDateTime('1980-01-01')
@@ -21,7 +21,8 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
 
     print(f'Reading from {starttime} to {endtime}')
     dirlist = sorted(os.listdir(path_data))
-    print(f'Files found: {dirlist}')
+    if filter_50Hz_f:
+        print('Reading and filtering 50 Hz ...')
     first_file = True
     st = obspy.Stream()
     for file in tqdm(dirlist):
@@ -33,7 +34,6 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
                     if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime):
                         st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
                         if filter_50Hz_f:
-                            print('Filtering 50 Hz')
                             st[0].data = obspy.signal.filter.bandstop(st[0].data, 49, 51, st[0].meta.sampling_rate, corners=8,
                                                       zerophase=True)
                         first_file = False
@@ -77,6 +77,19 @@ def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
         trace = obspy.Trace()
 
     return trace
+
+
+def get_start_end_time(path, format='PICKLE'):
+    dirlist = sorted(os.listdir(path))
+    starttime = []
+    endtime = []
+    for file in tqdm(dirlist):
+        file = os.path.join(path, file)
+        st_head = obspy.read(file, format=format, headonly=True)
+        starttime.append(st_head[0].stats.starttime)
+        endtime.append(st_head[0].stats.endtime)
+
+    return min(starttime), max(endtime)
 
 
 def open_browser(port):

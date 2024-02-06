@@ -15,7 +15,7 @@ import signal
 import pyautogui
 import socket
 from seismic_dash_utils import (read_and_preprocessing, open_browser, prepare_time_plot, update_layout,
-                                prepare_time_plot_3_channels, correct_data_anomalies)
+                                prepare_time_plot_3_channels, correct_data_anomalies, get_start_end_time)
 
 
 args = sys.argv
@@ -25,7 +25,7 @@ end = args[3]
 filt_50Hz = args[4]
 format_in = args[5]
 
-oversampling_factor = 10
+oversampling_factor = 5
 sock = socket.socket()
 sock.bind(('', 0))
 port = sock.getsockname()[1]
@@ -52,37 +52,37 @@ if filt_50Hz == 's':
 else:
     filter_50Hz_f = False
 
-
+data_path = []
+start_times = []
+end_times = []
 for i in range(0, 3):
-    data_path = path_root + '_' + geophone + '_' + channels[i]
+    data_path.append(path_root + '_' + geophone + '_' + channels[i])
     print(data_path)
-    TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
-    ST[i] = TR.copy()
+    [start_files, end_files] = get_start_end_time(data_path[i])
+    start_times.append(start_files)
+    end_times.append(end_files)
 
+
+if starttime is None:
+    starttime = max(start_times)
+else:
+    starttime = max([start_times, starttime])
+
+if endtime is None:
+    endtime = min(end_times)
+else:
+TR = read_and_preprocessing(data_path[0], format_in, starttime, endtime, filter_50Hz_f)
+fig1 = prepare_time_plot_3_channels(TR, oversampling_factor, 'X')
 del TR
 
-starttime = ST[0].stats.starttime
-endtime = ST[0].stats.endtime
+TR = read_and_preprocessing(data_path[1], format_in, starttime, endtime, filter_50Hz_f)
+fig2 = prepare_time_plot_3_channels(TR, oversampling_factor, 'Y')
+del TR
 
-TRACE_X = ST[0].slice(starttime, endtime)
-TRACE_Y = ST[1].slice(starttime, endtime)
-TRACE_Z = ST[2].slice(starttime, endtime)
+TR = read_and_preprocessing(data_path[2], format_in, starttime, endtime, filter_50Hz_f)
+fig3 = prepare_time_plot_3_channels(TR, oversampling_factor, 'Z')
+del TR
 
-fig1 = prepare_time_plot_3_channels(TRACE_X, oversampling_factor, 'X')
-fig2 = prepare_time_plot_3_channels(TRACE_Y, oversampling_factor, 'Y')
-fig3 = prepare_time_plot_3_channels(TRACE_Z, oversampling_factor, 'Z')
-
-
-TR_x_max = np.max(fig1['data'][0]['y'])
-TR_x_min = np.min(fig1['data'][0]['y'])
-TR_y_max = np.max(fig2['data'][0]['y'])
-TR_y_min = np.min(fig2['data'][0]['y'])
-TR_z_max = np.max(fig3['data'][0]['y'])
-TR_z_min = np.min(fig3['data'][0]['y'])
-
-del TRACE_X
-del TRACE_Y
-del TRACE_Z
 
 # Creating app layout:
 
@@ -115,13 +115,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min_x',
                           type='number',
-                          value=TR_x_min,
+                          value=0,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max_x',
                           type='number',
-                          value=TR_x_max,
+                          value=0,
                           debounce=True
                       )],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
@@ -131,13 +131,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min_y',
                           type='number',
-                          value=TR_y_min,
+                          value=0,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max_y',
                           type='number',
-                          value=TR_y_max,
+                          value=0,
                           debounce=True
                       )],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
@@ -147,13 +147,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min_z',
                           type='number',
-                          value=TR_z_min,
+                          value=0,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max_z',
                           type='number',
-                          value=TR_z_max,
+                          value=0,
                           debounce=True
                       )],
             style={'display': 'in-line-block'})],
@@ -241,7 +241,7 @@ def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata
         layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z, fig_3)
         fig_3['layout'] = layout3
 
-    else:
+    if ctx.triggered_id not in ['max_x', 'min_x', 'max_y', 'min_y', 'max_z', 'min_z', 'auto_x', 'auto_y', 'auto_z', None]:
         fig_1 = prepare_time_plot_3_channels(tr_x, oversampling_factor, 'X')
         fig_2 = prepare_time_plot_3_channels(tr_y, oversampling_factor, 'Y')
         fig_3 = prepare_time_plot_3_channels(tr_z, oversampling_factor, 'Z')
