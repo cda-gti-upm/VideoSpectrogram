@@ -140,6 +140,42 @@ def prepare_time_plot(tr, oversampling_factor):
     return fig
 
 
+def get_3_channel_figures(starttime, endtime, geophone, filter_50Hz_f, path_root, oversampling_factor, format_in):
+    channels = ['X', 'Y', 'Z']
+    data_path = []
+    start_times = []
+    end_times = []
+
+    for i in range(0, 3):
+        data_path.append(path_root + '_' + geophone + '_' + channels[i])
+        print(f'Checking start and end time for files in {data_path[i]} ...')
+        [start_files, end_files] = get_start_end_time(data_path[i])
+        start_times.append(start_files)
+        end_times.append(end_files)
+
+    if starttime is None:
+        starttime = max(start_times)
+    else:
+        start_times.append(starttime)
+        starttime = max(start_times)
+
+    if endtime is None:
+        endtime = min(end_times)
+    else:
+        end_times.append(endtime)
+        endtime = min(end_times)
+
+    tr = read_and_preprocessing(data_path[0], format_in, starttime, endtime, filter_50Hz_f)
+    fig1 = prepare_time_plot_3_channels(tr, oversampling_factor, 'X')
+
+    tr = read_and_preprocessing(data_path[1], format_in, starttime, endtime, filter_50Hz_f)
+    fig2 = prepare_time_plot_3_channels(tr, oversampling_factor, 'Y')
+
+    tr = read_and_preprocessing(data_path[2], format_in, starttime, endtime, filter_50Hz_f)
+    fig3 = prepare_time_plot_3_channels(tr, oversampling_factor, 'Z')
+
+    return fig1, fig2, fig3, starttime, endtime
+
 def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
     print(f'Preparing figure...')
     print('Updating dates...')
@@ -195,7 +231,7 @@ def update_layout(layout, min_y, max_y, auto_y, fig):
     if auto_y == ['autorange']:
         tr_max = np.max(fig['data'][0]['y'])
         tr_min = np.min(fig['data'][0]['y'])
-        max_allowed = 433438
+        max_allowed = 100000
         if tr_max > max_allowed and tr_min > -max_allowed:
             layout['yaxis']['autorange'] = False
             layout['yaxis']['range'] = [tr_min, max_allowed]
@@ -208,6 +244,15 @@ def update_layout(layout, min_y, max_y, auto_y, fig):
         else:
             layout['yaxis']['autorange'] = True
 
+    else:
+        layout['yaxis']['autorange'] = False
+        layout['yaxis']['range'] = [min_y, max_y]
+    return layout
+
+
+def update_layout_3_channels(layout, min_y, max_y, auto_y):
+    if auto_y == ['autorange']:
+        layout['yaxis']['autorange'] = True
     else:
         layout['yaxis']['autorange'] = False
         layout['yaxis']['range'] = [min_y, max_y]
@@ -289,7 +334,7 @@ def av_signal(tr, factor):
         for j in range(i * interval_length, i * interval_length + interval_length):
             if j >= length:
                 break
-            if abs(tr.data[j]) > max_value:
+            if abs(tr.data[j]) > abs(max_value):
                 max_value = tr.data[j]
 
         data[i] = max_value

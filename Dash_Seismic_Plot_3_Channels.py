@@ -15,7 +15,8 @@ import signal
 import pyautogui
 import socket
 from seismic_dash_utils import (read_and_preprocessing, open_browser, prepare_time_plot, update_layout,
-                                prepare_time_plot_3_channels, correct_data_anomalies, get_start_end_time)
+                                prepare_time_plot_3_channels, correct_data_anomalies, get_start_end_time,
+                                get_3_channel_figures, update_layout_3_channels)
 
 
 args = sys.argv
@@ -31,12 +32,9 @@ sock.bind(('', 0))
 port = sock.getsockname()[1]
 del sock
 
-ST = obspy.Stream([obspy.Trace(), obspy.Trace(), obspy.Trace()])
-channels = ['X', 'Y', 'Z']
-
-
 styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
 path_root = './data/CSIC_LaPalma'
+
 if start:
     starttime = UTCDateTime(start)
 else:
@@ -52,43 +50,10 @@ if filt_50Hz == 's':
 else:
     filter_50Hz_f = False
 
-data_path = []
-start_times = []
-end_times = []
-for i in range(0, 3):
-    data_path.append(path_root + '_' + geophone + '_' + channels[i])
-    print(data_path)
-    [start_files, end_files] = get_start_end_time(data_path[i])
-    start_times.append(start_files)
-    end_times.append(end_files)
+
+[fig1, fig2, fig3, starttime, endtime] = get_3_channel_figures(starttime, endtime, geophone, filter_50Hz_f, path_root, oversampling_factor, format_in)
 
 
-if starttime is None:
-    starttime = max(start_times)
-else:
-    starttime = max([start_times, starttime])
-
-if endtime is None:
-    endtime = min(end_times)
-else:
-    endtime = min([end_times, endtime])
-
-TR = read_and_preprocessing(data_path[0], format_in, starttime, endtime, filter_50Hz_f)
-fig1 = prepare_time_plot_3_channels(TR, oversampling_factor, 'X')
-del TR
-
-TR = read_and_preprocessing(data_path[1], format_in, starttime, endtime, filter_50Hz_f)
-fig2 = prepare_time_plot_3_channels(TR, oversampling_factor, 'Y')
-del TR
-
-TR = read_and_preprocessing(data_path[2], format_in, starttime, endtime, filter_50Hz_f)
-fig3 = prepare_time_plot_3_channels(TR, oversampling_factor, 'Z')
-del TR
-del data_path
-del start_times
-del end_times
-del start_files
-del end_files
 
 # Creating app layout:
 
@@ -179,6 +144,8 @@ app.layout = html.Div([
     Output('x_plot', 'relayoutData'),
     Output('y_plot', 'relayoutData'),
     Output('z_plot', 'relayoutData'),
+    Output('startdate', 'value'),
+    Output('enddate', 'value'),
     State('startdate', 'value'),
     State('enddate', 'value'),
     Input('x_plot', 'relayoutData'),
@@ -200,79 +167,78 @@ app.layout = html.Div([
     State('y_plot', 'figure'),
     State('z_plot', 'figure'),
 )
-def update_plot(startdate, enddate, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
+def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
                 min_y, max_z, min_z, auto_x, auto_y, auto_z, button, geo_sel, update, fig_1, fig_2, fig_3):
+    print(f'El trigger es {ctx.triggered_id}')
     if ctx.triggered_id == 'kill_button':
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
 
+    start_time = UTCDateTime(starttime_app)
+    end_time = UTCDateTime(endtime_app)
     if ctx.triggered_id == 'update':
-        data_path = []
-        start_files = []
-        end_files = []
+        [fig_1, fig_2, fig_3, start_time, end_time] = get_3_channel_figures(start_time, end_time, geo_sel, filter_50Hz_f, path_root, oversampling_factor, format_in)
 
-        for j in range(0, 3):
-            data_path.append(path_root + '_' + geophone + '_' + channels[i])
-            print(data_path)
-            [start_files, end_files] = get_start_end_time(data_path[i])
-            start_times.append(start_files)
-            end_times.append(end_files)
+    if ctx.triggered_id in ['plot_x', 'plot_y', 'plot_z']:
+        if "xaxis.range[0]" in relayoutdata_1:
+            start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+            fig_2['layout']['xaxis']['autorange'] = False
+            fig_2['layout']['xaxis']['range'] = [start_time, end_time]
+            fig_2['layout']['yaxis']['autorange'] = False
+            fig_2['layout']['yaxis']['range'] = [relayoutdata_1['yaxis.range[0]'], relayoutdata_1['yaxis.range[1]']]
+            fig_3['layout']['xaxis']['autorange'] = False
+            fig_3['layout']['xaxis']['range'] = [start_time, end_time]
+            fig_3['layout']['yaxis']['autorange'] = False
+            fig_3['layout']['yaxis']['range'] = [relayoutdata_1['yaxis.range[0]'], relayoutdata_1['yaxis.range[1]']]
 
-        starttime = max([start_times, startdate])
-        endtime = min([end_times,enddate])
-        tr = read_and_preprocessing(data_path[0], format_in, starttime, endtime, filter_50Hz_f)
-        fig_1 = prepare_time_plot_3_channels(tr, oversampling_factor, 'X')
-        del tr
+        elif "xaxis.range[0]" in relayoutdata_2:
+            start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
+            fig_1['layout']['xaxis']['autorange'] = False
+            fig_1['layout']['xaxis']['range'] = [start_time, end_time]
+            fig_1['layout']['yaxis']['autorange'] = False
+            fig_1['layout']['yaxis']['range'] = [relayoutdata_2['yaxis.range[0]'], relayoutdata_2['yaxis.range[1]']]
+            fig_3['layout']['xaxis']['autorange'] = False
+            fig_3['layout']['xaxis']['range'] = [start_time, end_time]
+            fig_3['layout']['yaxis']['autorange'] = False
+            fig_3['layout']['yaxis']['range'] = [relayoutdata_2['yaxis.range[0]'], relayoutdata_2['yaxis.range[1]']]
 
-        tr = read_and_preprocessing(data_path[1], format_in, starttime, endtime, filter_50Hz_f)
-        fig_2 = prepare_time_plot_3_channels(tr, oversampling_factor, 'Y')
-        del tr
+        elif "xaxis.range[0]" in relayoutdata_3:
+            start_time = UTCDateTime(relayoutdata_3['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_3['xaxis.range[1]'])
+            fig_1['layout']['xaxis']['autorange'] = False
+            fig_1['layout']['xaxis']['range'] = [start_time, end_time]
+            fig_1['layout']['yaxis']['autorange'] = False
+            fig_1['layout']['yaxis']['range'] = [relayoutdata_3['yaxis.range[0]'], relayoutdata_3['yaxis.range[1]']]
+            fig_2['layout']['xaxis']['autorange'] = False
+            fig_2['layout']['xaxis']['range'] = [start_time, end_time]
+            fig_2['layout']['yaxis']['autorange'] = False
+            fig_2['layout']['yaxis']['range'] = [relayoutdata_3['yaxis.range[0]'], relayoutdata_3['yaxis.range[1]']]
+        else:
+            start_time = UTCDateTime(fig_1['data'][0]['x'][0])
+            end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
 
-        tr = read_and_preprocessing(data_path[2], format_in, starttime, endtime, filter_50Hz_f)
-        fig_3 = prepare_time_plot_3_channels(tr, oversampling_factor, 'Z')
-        del tr
-    else:
-        start_time = UTCDateTime(startdate)
-        end_time = UTCDateTime(enddate)
-
-        if ctx.triggered_id == 'x_plot':
-            if "xaxis.range[0]" in relayoutdata_1:
-                start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
-                end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
-        if ctx.triggered_id == 'y_plot':
-            if "xaxis.range[0]" in relayoutdata_2:
-                start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
-                end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
-        if ctx.triggered_id == 'z_plot':
-            if "xaxis.range[0]" in relayoutdata_3:
-                start_time = UTCDateTime(relayoutdata_3['xaxis.range[0]'])
-                end_time = UTCDateTime(relayoutdata_3['xaxis.range[1]'])
-
-
-
-
-        if ctx.triggered_id in ['max_x', 'min_x', 'max_y', 'min_y', 'max_z', 'min_z', 'auto_x', 'auto_y', 'auto_z']:
-
-            layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x, fig_1)
+            fig_1['layout']['xaxis']['autorange'] = True
+            fig_2['layout']['xaxis']['autorange'] = True
+            fig_3['layout']['xaxis']['autorange'] = True
+            layout1 = update_layout_3_channels(fig_1['layout'], min_x, max_x, auto_x)
             fig_1['layout'] = layout1
-            layout2 = update_layout(fig_2['layout'], min_y, max_y, auto_y, fig_2)
+            layout2 = update_layout_3_channels(fig_2['layout'], min_y, max_y, auto_y)
             fig_2['layout'] = layout2
-            layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z, fig_3)
+            layout3 = update_layout_3_channels(fig_3['layout'], min_z, max_z, auto_z)
             fig_3['layout'] = layout3
 
-        if ctx.triggered_id not in ['max_x', 'min_x', 'max_y', 'min_y', 'max_z', 'min_z', 'auto_x', 'auto_y', 'auto_z', None]:
-            fig_1 = prepare_time_plot_3_channels(tr_x, oversampling_factor, 'X')
-            fig_2 = prepare_time_plot_3_channels(tr_y, oversampling_factor, 'Y')
-            fig_3 = prepare_time_plot_3_channels(tr_z, oversampling_factor, 'Z')
-            layout1 = update_layout(fig_1['layout'], min_x, max_x, auto_x, fig_1)
-            fig_1['layout'] = layout1
-            layout2 = update_layout(fig_2['layout'], min_y, max_y, auto_y, fig_2)
-            fig_2['layout'] = layout2
-            layout3 = update_layout(fig_3['layout'], min_z, max_z, auto_z, fig_3)
-            fig_3['layout'] = layout3
 
-    return fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True}
+    layout1 = update_layout_3_channels(fig_1['layout'], min_x, max_x, auto_x)
+    fig_1['layout'] = layout1
+    layout2 = update_layout_3_channels(fig_2['layout'], min_y, max_y, auto_y)
+    fig_2['layout'] = layout2
+    layout3 = update_layout_3_channels(fig_3['layout'], min_z, max_z, auto_z)
+    fig_3['layout'] = layout3
+
+    return fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
  # Run the app
