@@ -169,76 +169,75 @@ app.layout = html.Div([
 )
 def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
                 min_y, max_z, min_z, auto_x, auto_y, auto_z, button, geo_sel, update, fig_1, fig_2, fig_3):
-    print(f'El trigger es {ctx.triggered_id}')
-    if ctx.triggered_id == 'kill_button':
-        pyautogui.hotkey('ctrl', 'w')
-        pid = os.getpid()
-        os.kill(pid, signal.SIGTERM)
 
     start_time = UTCDateTime(starttime_app)
     end_time = UTCDateTime(endtime_app)
-    if ctx.triggered_id == 'update':
-        [fig_1, fig_2, fig_3, start_time, end_time] = get_3_channel_figures(start_time, end_time, geo_sel, filter_50Hz_f, path_root, oversampling_factor, format_in)
+    print(f'El trigger es {ctx.triggered_id}')
+    if ctx.triggered_id is not None:
+        if ctx.triggered_id == 'kill_button':
+            pyautogui.hotkey('ctrl', 'w')
+            pid = os.getpid()
+            os.kill(pid, signal.SIGTERM)
 
-    if ctx.triggered_id in ['plot_x', 'plot_y', 'plot_z']:
-        if "xaxis.range[0]" in relayoutdata_1:
-            start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
-            end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
-            fig_2['layout']['xaxis']['autorange'] = False
-            fig_2['layout']['xaxis']['range'] = [start_time, end_time]
-            fig_2['layout']['yaxis']['autorange'] = False
-            fig_2['layout']['yaxis']['range'] = [relayoutdata_1['yaxis.range[0]'], relayoutdata_1['yaxis.range[1]']]
-            fig_3['layout']['xaxis']['autorange'] = False
-            fig_3['layout']['xaxis']['range'] = [start_time, end_time]
-            fig_3['layout']['yaxis']['autorange'] = False
-            fig_3['layout']['yaxis']['range'] = [relayoutdata_1['yaxis.range[0]'], relayoutdata_1['yaxis.range[1]']]
+        if ctx.triggered_id == 'update':
+            [fig_1, fig_2, fig_3, start_time, end_time] = get_3_channel_figures(start_time, end_time, geo_sel,
+                                                                                filter_50Hz_f, path_root,
+                                                                                oversampling_factor, format_in)
 
-        elif "xaxis.range[0]" in relayoutdata_2:
-            start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
-            end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
-            fig_1['layout']['xaxis']['autorange'] = False
-            fig_1['layout']['xaxis']['range'] = [start_time, end_time]
-            fig_1['layout']['yaxis']['autorange'] = False
-            fig_1['layout']['yaxis']['range'] = [relayoutdata_2['yaxis.range[0]'], relayoutdata_2['yaxis.range[1]']]
-            fig_3['layout']['xaxis']['autorange'] = False
-            fig_3['layout']['xaxis']['range'] = [start_time, end_time]
-            fig_3['layout']['yaxis']['autorange'] = False
-            fig_3['layout']['yaxis']['range'] = [relayoutdata_2['yaxis.range[0]'], relayoutdata_2['yaxis.range[1]']]
+        if ctx.triggered_id in ['plot_x', 'plot_y', 'plot_z']:
+            if "xaxis.range[0]" in relayoutdata_1:
+                print('rel_1')
+                start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
+                end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+                fig_2['layout']['xaxis']['autorange'] = False
+                fig_2['layout']['xaxis']['range'] = [start_time, end_time]
 
-        elif "xaxis.range[0]" in relayoutdata_3:
-            start_time = UTCDateTime(relayoutdata_3['xaxis.range[0]'])
-            end_time = UTCDateTime(relayoutdata_3['xaxis.range[1]'])
-            fig_1['layout']['xaxis']['autorange'] = False
-            fig_1['layout']['xaxis']['range'] = [start_time, end_time]
-            fig_1['layout']['yaxis']['autorange'] = False
-            fig_1['layout']['yaxis']['range'] = [relayoutdata_3['yaxis.range[0]'], relayoutdata_3['yaxis.range[1]']]
-            fig_2['layout']['xaxis']['autorange'] = False
-            fig_2['layout']['xaxis']['range'] = [start_time, end_time]
-            fig_2['layout']['yaxis']['autorange'] = False
-            fig_2['layout']['yaxis']['range'] = [relayoutdata_3['yaxis.range[0]'], relayoutdata_3['yaxis.range[1]']]
-        else:
-            start_time = UTCDateTime(fig_1['data'][0]['x'][0])
-            end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
-
-            fig_1['layout']['xaxis']['autorange'] = True
-            fig_2['layout']['xaxis']['autorange'] = True
-            fig_3['layout']['xaxis']['autorange'] = True
-            layout1 = update_layout_3_channels(fig_1['layout'], min_x, max_x, auto_x)
-            fig_1['layout'] = layout1
-            layout2 = update_layout_3_channels(fig_2['layout'], min_y, max_y, auto_y)
-            fig_2['layout'] = layout2
-            layout3 = update_layout_3_channels(fig_3['layout'], min_z, max_z, auto_z)
-            fig_3['layout'] = layout3
+                fig_3['layout']['xaxis']['autorange'] = False
+                fig_3['layout']['xaxis']['range'] = [start_time, end_time]
 
 
-    layout1 = update_layout_3_channels(fig_1['layout'], min_x, max_x, auto_x)
-    fig_1['layout'] = layout1
-    layout2 = update_layout_3_channels(fig_2['layout'], min_y, max_y, auto_y)
-    fig_2['layout'] = layout2
-    layout3 = update_layout_3_channels(fig_3['layout'], min_z, max_z, auto_z)
-    fig_3['layout'] = layout3
+            elif "xaxis.range[0]" in relayoutdata_2:
+                print('rel_2')
+                start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
+                end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
+                fig_1['layout']['xaxis']['autorange'] = False
+                fig_1['layout']['xaxis']['range'] = [start_time, end_time]
 
-    return fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S")
+                fig_3['layout']['xaxis']['autorange'] = False
+                fig_3['layout']['xaxis']['range'] = [start_time, end_time]
+
+
+            elif "xaxis.range[0]" in relayoutdata_3:
+                print('rel_3')
+                start_time = UTCDateTime(relayoutdata_3['xaxis.range[0]'])
+                end_time = UTCDateTime(relayoutdata_3['xaxis.range[1]'])
+                fig_1['layout']['xaxis']['autorange'] = False
+                fig_1['layout']['xaxis']['range'] = [start_time, end_time]
+
+                fig_2['layout']['xaxis']['autorange'] = False
+                fig_2['layout']['xaxis']['range'] = [start_time, end_time]
+
+            else:
+                print('autosize')
+                start_time = UTCDateTime(fig_1['data'][0]['x'][0])
+                end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
+
+                fig_1['layout']['xaxis']['autorange'] = True
+                fig_2['layout']['xaxis']['autorange'] = True
+                fig_3['layout']['xaxis']['autorange'] = True
+
+
+        print(start_time)
+        print(end_time)
+        layout1 = update_layout_3_channels(fig_1, start_time, end_time, min_x, max_x, auto_x)
+        fig_1['layout'] = layout1
+        layout2 = update_layout_3_channels(fig_2, start_time, end_time, min_y, max_y, auto_y)
+        fig_2['layout'] = layout2
+        layout3 = update_layout_3_channels(fig_3, start_time, end_time, min_z, max_z, auto_z)
+        fig_3['layout'] = layout3
+
+    return (fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True},
+            start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S"))
 
 
  # Run the app

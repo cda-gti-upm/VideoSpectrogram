@@ -250,9 +250,18 @@ def update_layout(layout, min_y, max_y, auto_y, fig):
     return layout
 
 
-def update_layout_3_channels(layout, min_y, max_y, auto_y):
+def update_layout_3_channels(fig, starttime, endtime, min_y, max_y, auto_y):
+
+    layout = fig['layout']
+
     if auto_y == ['autorange']:
-        layout['yaxis']['autorange'] = True
+        times = np.array(fig['data'][0]['x'])
+        data = np.array(fig['data'][0]['y'])
+        displayed_data = data[(times > starttime) & (times < endtime)]
+        max_fig = np.max(displayed_data)
+        min_fig = np.min(displayed_data)
+        layout['yaxis']['autorange'] = False
+        layout['yaxis']['range'] = [min_fig + 0.1 * min_fig, max_fig + 0.1 * max_fig]
     else:
         layout['yaxis']['autorange'] = False
         layout['yaxis']['range'] = [min_y, max_y]
