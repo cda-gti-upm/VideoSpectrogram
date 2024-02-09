@@ -31,7 +31,7 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
             try:
                 if first_file:
                     st_head = obspy.read(file, format=format, headonly=True)
-                    if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime):
+                    if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime) or (starttime >= st_head[0].stats.starttime and endtime <= st_head[0].stats.endtime):
                         st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
                         if filter_50Hz_f:
                             st[0].data = obspy.signal.filter.bandstop(st[0].data, 49, 51, st[0].meta.sampling_rate, corners=8,
@@ -39,7 +39,7 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
                         first_file = False
                 else:
                     st_head = obspy.read(file, format=format, headonly=True)
-                    if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime):
+                    if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime) or (starttime >= st_head[0].stats.starttime and endtime <= st_head[0].stats.endtime):
                         new_st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
                         if filter_50Hz_f:
                             new_st[0].data = obspy.signal.filter.bandstop(new_st[0].data, 49, 51, new_st[0].meta.sampling_rate, corners=8,
@@ -73,7 +73,7 @@ def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
         '''
         trace = correct_data_anomalies(trace)
     except Exception as e:
-        print('Error reading data')
+        print(f'Error reading data: {e}')
         trace = obspy.Trace()
 
     return trace
@@ -187,15 +187,17 @@ def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
     target_num_samples = 1920
     factor = int(num_samples / (target_num_samples * oversampling_factor))
     if factor > 1:
+        df = av_signal(tr, factor)
+        print(f'{prefix_name} trace reduced to {len(df["data"])} samples...')
+        '''
         tr.decimate(factor, no_filter=True) #tr.decimate necesita que se haga copy() antes para consercar los datos
         print(f'{prefix_name} trace reduced to {len(tr.data)} samples...')
+        '''
+    else:
+        df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
 
     # Plotting and formatting
     print(f'Plotting and formating {prefix_name}...')
-
-
-    df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
-
     xlabel = "Date"
     ylabel = f"Amplitude {channel}"
     fig = px.line(df, x="times", y="data", labels={'times': '', 'data': ylabel})
@@ -280,7 +282,7 @@ def update_layout_rsam(layout, min_y, max_y, auto_y):
 
 
 def detect_anomalies(stream):
-    abs_th = 433000
+    abs_th = 500000
     # Detection of anomalous values
     for i, tr in enumerate(tqdm(stream)):
         # Detection of not-a-number values
@@ -349,6 +351,7 @@ def av_signal(tr, factor):
         data[i] = max_value
 
     tr.decimate(factor, no_filter=True)
+    tr.data = data
     df = pd.DataFrame({'data': data, 'times': tr.times('utcdatetime')})  # check for problems with date format
     return df
 """
@@ -359,11 +362,12 @@ print(len(df['data']))
 
 
 
-path_data = './data/CSIC_LaPalma_Geophone1_X'
+path_data = './data/CSIC_LaPalma_Geophone2_X'
 format = 'PICKLE'
-starttime = UTCDateTime('2021-10-01')
-endtime = UTCDateTime('2021-10-03')
+starttime = UTCDateTime('2021-11-25 23:00:00')
+endtime = UTCDateTime('2021-11-25 23:30:00')
 
-st = read_data_from_folder(path_data,format,starttime, endtime)
+st = read_and_preprocessing(path_data,format,starttime, endtime, False)
+
+
 """
-
