@@ -6,49 +6,31 @@ one.
 import math
 import librosa.display
 import sys
-
 from obspy.core import UTCDateTime
-import obspy.signal.filter
-
 import numpy as np
 import plotly.express as px
-
 from dash import Dash, dcc, html, Input, Output, ctx, State
 from ltsa.ltsa import seismicLTSA
-import webbrowser
 from threading import Timer
 import os
 import signal
 import pyautogui
-from seismic_dash_utils import (read_and_preprocessing, open_browser, generate_title, prepare_time_plot,
-                                update_layout, correct_data_anomalies)
+from seismic_dash_utils import read_and_preprocessing, open_browser, generate_title, prepare_time_plot, update_layout
 import socket
-"""
-Functions
-"""
 
-'''
-def av_signal(tr, factor):
-    length = len(tr)
-    interval_length = round(length/factor)
-    n_intervals = math.ceil(length/interval_length)
-    tr_s = obspy.core.Trace(data=np.arange(0,n_intervals))
-    
-    for i in range(0, n_intervals-1):
-        avg = 0
-        for j in range(i*interval_length, i*interval_length + interval_length):
-            avg += tr.data(j)
-        
-        avg = avg / interval_length
-        tr_s.data[i] = avg
-'''
 
 def prepare_spectrogram(tr, s_min, s_max):
+
+    """
+        Computation of the spectrogram and generation of the figure. If the number of samples of the spectrogram is
+        greater than 100 times the horizontal resolution of the screen (default 1920), the LTSA is computed. If not, a
+        standard spectrogram.
+    """
     print(f'Preparing figure...')
     print('Updating dates...')
     res = 1920
     num_samples = math.ceil(len(tr.data) / hop_length)
-    if num_samples > (res * 10):
+    if num_samples > (res * 100):
         print('COMPUTATION OF LTSA')
         d = seismicLTSA(tr.data, tr.meta.sampling_rate)
         params = {'div_len': int(np.round(len(tr.data) / res)),  # Length in numer of samples
@@ -90,8 +72,7 @@ def prepare_spectrogram(tr, s_min, s_max):
     return fig
 
 
-channels = ['X', 'Y', 'Z']
-
+# Get arguments
 args = sys.argv
 print(args)
 geophone = args[1]
@@ -106,24 +87,24 @@ n_fft = int(args[9])
 window = args[10]
 S_max = int(args[11])
 S_min = int(args[12])
-path_root = './data/CSIC_LaPalma'
 
-oversampling_factor = 10
-
+# Get a random free port
 sock = socket.socket()
 sock.bind(('', 0))
 port = sock.getsockname()[1]
 del sock
 
+oversampling_factor = 10  # The higher, the more samples in the amplitude figure
+
 if start:
     starttime = UTCDateTime(start)
 else:
     starttime = None
-
 if end:
     endtime = UTCDateTime(end)
 else:
     endtime = None
+
 
 if filt_50Hz == 's':
     filter_50Hz_f = True
@@ -131,6 +112,7 @@ else:
     filter_50Hz_f = False
 
 
+path_root = './data/CSIC_LaPalma'
 data_path = path_root + '_' + geophone + '_' + initial_channel
 
 TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
@@ -139,12 +121,12 @@ starttime = TR.stats.starttime
 endtime = TR.stats.endtime
 
 fig2 = prepare_spectrogram(TR, 75, 130)
-tr = TR.copy()
-fig1 = prepare_time_plot(tr, oversampling_factor)
-if len(tr) != 0:
+trace = TR.copy()
+fig1 = prepare_time_plot(trace, oversampling_factor)
+if len(trace) != 0:
     layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
     fig1['layout'] = layout
-del tr
+del trace
 
 # Creating app layout:
 
@@ -272,14 +254,15 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
     print(f'El trigger es {ctx.triggered_id}')
     global TR
     if ctx.triggered_id == 'kill_button':
+        # Close the app
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
 
     if ctx.triggered_id == 'update':
+        # Read new data
         TR.data = np.zeros(len(TR))
         path = path_root + '_' + geo_sel + '_' + channel_selector
-        print(path)
         TR = read_and_preprocessing(path, format_in, UTCDateTime(startdate), UTCDateTime(enddate), filter_50Hz_f)
 
     start_time = UTCDateTime(startdate)
@@ -287,24 +270,30 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
 
     if ctx.triggered_id in ['time_plot']:
         if "xaxis.range[0]" in relayoutdata_1:
+            # Get start and end time the user selected on the amplitude plot
             start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
 
     if ctx.triggered_id in ['spectrogram']:
         if "xaxis.range[0]" in relayoutdata_2:
+            # Get start and end time the user selected on the spectrogram
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
 
     tr = TR.slice(start_time, end_time)
 
     if ctx.triggered_id in ['max', 'min', 'auto']:
+        # Manage amplitude axis of the amplitude plot
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
         fig_1['layout'] = layout
     elif ctx.triggered_id in ['max_freq', 'min_freq']:
+        # Maximum and minimum displayed frequencies
         fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
     elif ctx.triggered_id in ['Smax', 'Smin']:
+        # Maximum and minimum displayed spectrogram power values
         fig_2['layout']['coloraxis']['cmax'] = s_max
         fig_2['layout']['coloraxis']['cmin'] = s_min
+
     if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', None]:
         fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
         fig_1 = prepare_time_plot(tr=tr, oversampling_factor=oversampling_factor)
@@ -318,7 +307,7 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
     return fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S")
 
 
-# Main program
+# Run the app
 Timer(1, open_browser, args=(port,)).start()
 app.run_server(debug=False, port=port)
 

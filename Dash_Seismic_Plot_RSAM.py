@@ -4,26 +4,21 @@ Read datafiles of given locations (geophones) and channels and generate one inde
 one.
 """
 
-import obspy
+
 import numpy as np
 from obspy.core import UTCDateTime
-import obspy.signal.filter
-from utils import read_data_from_folder
-from scipy.ndimage import uniform_filter1d
-import plotly.express as px
-import pandas as pd
-from screeninfo import get_monitors
 from dash import Dash, dcc, html, Input, Output, State, ctx
 import sys
-import webbrowser
 from threading import Timer
 import os
 import signal
 import pyautogui
 import socket
 from seismic_dash_utils import (read_and_preprocessing, open_browser, prepare_time_plot,
-                                update_layout, prepare_rsam, update_layout_rsam, detect_anomalies, correct_data_anomalies)
+                                update_layout, prepare_rsam, update_layout_rsam)
 
+
+# Get arguments
 args = sys.argv
 geophone = args[1]
 initial_channel = args[2]
@@ -32,22 +27,19 @@ end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
 
-oversampling_factor = 50
+oversampling_factor = 50  # A higher value gives more samples to the plot
 
+# Get a free random port
 sock = socket.socket()
 sock.bind(('', 0))
 port = sock.getsockname()[1]
 del sock
 
 
-styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
-path_root = './data/CSIC_LaPalma'
-
 if start:
     starttime = UTCDateTime(start)
 else:
     starttime = None
-
 if end:
     endtime = UTCDateTime(end)
 else:
@@ -59,25 +51,24 @@ else:
     filter_50Hz_f = False
 
 
+path_root = './data/CSIC_LaPalma'
 data_path = path_root + '_' + geophone + '_' + initial_channel
-print(data_path)
+print(f' Data path is: {data_path}')
 TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
-
-tr = TR.copy()
+trace = TR.copy()
 starttime = TR.stats.starttime
 endtime = TR.stats.endtime
-fig1 = prepare_time_plot(tr, oversampling_factor)
-if len(tr) != 0:
+
+fig1 = prepare_time_plot(trace, oversampling_factor)
+if len(trace) != 0:
     layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
     fig1['layout'] = layout
-fig2 = prepare_rsam(tr)
 
-del tr
-
+fig2 = prepare_rsam(trace)
+del trace
 
 
 # Creating app layout:
-
 app = Dash(__name__)
 app.layout = html.Div([
     dcc.Dropdown(['Geophone1', 'Geophone2', 'Geophone3', 'Geophone4', 'Geophone5', 'Geophone6', 'Geophone7',
@@ -178,44 +169,48 @@ app.layout = html.Div([
     State('time_plot', 'figure'),
     State('RSAM', 'figure'),
 )
-def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
+def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
                 min_y_rsam, auto_y, auto_y_rsam, button, geo_sel, update, fig_1, fig_2):
     global TR
-    print(f'El trigger es {ctx.triggered_id}')
+
     if ctx.triggered_id == 'kill_button':
+        # Close the app
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
-    if ctx.triggered_id in ['update']:
+
+    if ctx.triggered_id == 'update':
+        # Read new data
         length = len(TR)
         TR.data = np.zeros(length)
-
         path = path_root + '_' + geo_sel + '_' + channel_selector
-        print(path)
-        TR = read_and_preprocessing(path, format_in, UTCDateTime(startdate), UTCDateTime(enddate), filter_50Hz_f)
+        TR = read_and_preprocessing(path, format_in, UTCDateTime(starttime_app), UTCDateTime(endtime_app), filter_50Hz_f)
 
-
-    start_time = UTCDateTime(startdate)
-    end_time = UTCDateTime(enddate)
+    start_time = UTCDateTime(starttime_app)
+    end_time = UTCDateTime(endtime_app)
 
     if ctx.triggered_id in ['time_plot']:
         if "xaxis.range[0]" in relayoutdata_1:
+            # Get start and end time the user selected on the amplitude plot
             start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
 
     elif ctx.triggered_id in ['RSAM']:
         if "xaxis.range[0]" in relayoutdata_2:
+            # Get start and end time the user selected on the RSAM plot
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
 
 
     if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
+        # Management of the amplitude ranges
         layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
         fig_1['layout'] = layout
         layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
         fig_2['layout'] = layout_rsam
 
     if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM', None]:
+        # Computation of the new trace and figures
         tr = TR.slice(start_time, end_time)
         fig_1 = prepare_time_plot(tr, oversampling_factor)
         fig_2 = prepare_rsam(tr)
@@ -227,10 +222,10 @@ def update_plot(channel_selector, startdate, enddate, relayoutdata_1, relayoutda
             layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
             fig_2['layout'] = layout_rsam
 
-    return fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S")
+    return (fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"),
+            end_time.strftime("%Y-%m-%d %H:%M:%S"))
 
 
-# Main program
 # Run the app
 Timer(1, open_browser, args=(port,)).start()
 app.run_server(debug=False, port=port)

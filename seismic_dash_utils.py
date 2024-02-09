@@ -1,5 +1,4 @@
 import os
-import time
 from obspy.core import UTCDateTime
 import obspy.signal.filter
 import webbrowser
@@ -13,7 +12,14 @@ import math
 
 
 def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, verbose=True):
-    # Read all data files from directory
+    """
+        Reads all data files from directory. First reads the headers of all the files to check the start and end time
+         and, if necessary, reads the data from the files. If no data is found for the specified dates, returns an empy
+        obspy.Stream.
+
+        The 50 Hz filter is applied individually to each file for memory reasons.
+    """
+
     if starttime is None:
         starttime = UTCDateTime('1980-01-01')
     if endtime is None:
@@ -22,7 +28,7 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
     print(f'Reading from {starttime} to {endtime}')
     dirlist = sorted(os.listdir(path_data))
     if filter_50Hz_f:
-        print('Reading and filtering 50 Hz ...')
+        print('Filtering 50 Hz is activated...')
     first_file = True
     st = obspy.Stream()
     for file in tqdm(dirlist):
@@ -50,6 +56,13 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
                     print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
     return st
 def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
+    """
+        Reads the data for the specified path, format, start and end time. The 50 Hz filter is to eliminate the
+        interference of the electric lines. If it is set to True, reading the files will take more time.
+        After reading the data, the files are merged into one obspy.Trace and then processed to eliminate not appropiate
+        values.
+        If no data is available, returns an empty obspy.Trace.
+    """
     # Read data
     print(f'Reading data ...')
     stream = read_data_from_folder(path, in_format, start, end, filter_50Hz_f)
@@ -57,9 +70,9 @@ def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
     # Sort data
     print(f'Sorting data ...')
     stream.sort(['starttime'])
+
     try:
         print(f'Data spans from {stream[0].stats.starttime} until {stream[-1].stats.endtime}')
-
         # Merge traces
         print(f'Merging data ...')
         stream.merge(method=0, fill_value=0)
@@ -80,6 +93,11 @@ def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
 
 
 def get_start_end_time(path, format='PICKLE'):
+    """
+        Returns the earliest start time and latest end time of all the PICKLE files in the path. Needed for the 3
+        channel plot implementation, if a channel of one geophone do not have complete data for a time interval.
+    """
+    print(f'Checking start and end time of available data in {path} ...')
     dirlist = sorted(os.listdir(path))
     starttime = []
     endtime = []
@@ -93,28 +111,35 @@ def get_start_end_time(path, format='PICKLE'):
 
 
 def open_browser(port):
+    """
+        Opens the browser automatically
+    """
     webbrowser.open_new("http://localhost:{}".format(port))
 
 
 def generate_title(tr, prefix_name):
+    """
+        Generate title of the plot
+    """
     title = f'{prefix_name} {tr.meta.network}, {tr.meta.station}, {tr.meta.location}, Channel {tr.meta.channel}, from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}'
     return title
 
 
 def prepare_time_plot(tr, oversampling_factor):
+    """
+        Generates the amplitude plot. If the trace has too many samples it is split into windows and the maximum abs
+        value is selected for each of them.
+    """
     if len(tr) != 0:
         print(f'Preparing figure...')
-        print('Updating dates...')
-        # Decimation
-        print(f'Decimation...')
         num_samples = len(tr.data)
         prefix_name = 'Seismic amplitude'
         print(f'{prefix_name} trace has {len(tr.data)} samples...')
-        target_num_samples = 1920
+        target_num_samples = 1920  # Resolution of the screen
         factor = int(num_samples / (target_num_samples * oversampling_factor))
         if factor > 1:
 
-            df = av_signal(tr, factor)
+            df = max_per_window(tr, factor)
             print(f'{prefix_name} trace reduced to {len(df["data"])} samples...')
             """
             tr.decimate(factor, no_filter=True)  # tr.decimate necesita que se haga copy() antes para consercar los datos
@@ -129,14 +154,13 @@ def prepare_time_plot(tr, oversampling_factor):
         xlabel = "Date"
         ylabel = "Amplitude"
         title = generate_title(tr, prefix_name)
-
         fig = px.line(df, x="times", y="data", labels={'times': '', 'data': ylabel})
         fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
         fig['layout']['margin'] = {'t': 30, 'b': 30}
         fig['layout']['xaxis']['automargin'] = False
         fig['layout']['yaxis']['autorange'] = True
     else:
-        fig = px.line()
+        fig = px.line()  # If the trace has no data generate an empty fig
     return fig
 
 
@@ -148,7 +172,6 @@ def get_3_channel_figures(starttime, endtime, geophone, filter_50Hz_f, path_root
 
     for i in range(0, 3):
         data_path.append(path_root + '_' + geophone + '_' + channels[i])
-        print(f'Checking start and end time for files in {data_path[i]} ...')
         [start_files, end_files] = get_start_end_time(data_path[i])
         start_times.append(start_files)
         end_times.append(end_files)
@@ -178,16 +201,13 @@ def get_3_channel_figures(starttime, endtime, geophone, filter_50Hz_f, path_root
 
 def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
     print(f'Preparing figure...')
-    print('Updating dates...')
-    # Decimation
-    print(f'Decimation...')
     num_samples = len(tr.data)
     prefix_name = 'Seismic amplitude'
     print(f'{prefix_name} trace has {len(tr.data)} samples...')
     target_num_samples = 1920
     factor = int(num_samples / (target_num_samples * oversampling_factor))
     if factor > 1:
-        df = av_signal(tr, factor)
+        df = max_per_window(tr, factor)
         print(f'{prefix_name} trace reduced to {len(df["data"])} samples...')
         '''
         tr.decimate(factor, no_filter=True) #tr.decimate necesita que se haga copy() antes para consercar los datos
@@ -221,7 +241,7 @@ def prepare_rsam(tr):
     xlabel = "Date"
     ylabel = "Amplitude"
     title = generate_title(tr, 'RSAM')
-    fig = px.line(df, x="times", y="data", labels={'data': ylabel})
+    fig = px.line(df, x="times", y="data", labels={'times': '', 'data': ylabel})
     fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
     fig['layout']['margin'] = {'t': 30, 'b': 30}
     fig['layout']['xaxis']['automargin'] = False
@@ -230,6 +250,10 @@ def prepare_rsam(tr):
 
 
 def update_layout(layout, min_y, max_y, auto_y, fig):
+    """
+        Updates the layout of the amplitude plot. If autorange is selected in the app, the maximum amplitude is set to
+        (+-)100.000.
+    """
     if auto_y == ['autorange']:
         tr_max = np.max(fig['data'][0]['y'])
         tr_min = np.min(fig['data'][0]['y'])
@@ -253,6 +277,12 @@ def update_layout(layout, min_y, max_y, auto_y, fig):
 
 
 def update_layout_3_channels(fig, starttime, endtime, min_y, max_y, auto_y):
+    """
+        Manages the amplitude of the plots in the 3 channel implementation. As the traces are not available in memory,
+        when the data is sliced the autorange does not work. We need to compute manually the maximum and minimum value
+        of the data contained in the figure for the selected start and end time and then generate the appropiate y-axis
+        for each channel.
+    """
 
     layout = fig['layout']
 
@@ -334,7 +364,14 @@ def correct_data_anomalies(tr):
 
     return tr
 
-def av_signal(tr, factor):
+
+def max_per_window(tr, factor):
+    """
+        As the trace has many samples, but not all can be fitted on the screen, a new trace is generated with fewer
+        samples. The best approach we found was to split the trace into slices and for each of them keep the sample that
+        has the maximum absolute value. By doing this, we guarantee that seismic activity is not missed. Then, if the
+        wishes to have a more precise representation the trace will be recalculated after the zoom.
+    """
     length = len(tr)
     n_intervals = math.ceil(length / factor)
     interval_length = factor
@@ -354,20 +391,3 @@ def av_signal(tr, factor):
     tr.data = data
     df = pd.DataFrame({'data': data, 'times': tr.times('utcdatetime')})  # check for problems with date format
     return df
-"""
-tr = obspy.Trace(np.arange(50))
-df = av_signal(tr,8)
-print(df['data'])
-print(len(df['data']))
-
-
-
-path_data = './data/CSIC_LaPalma_Geophone2_X'
-format = 'PICKLE'
-starttime = UTCDateTime('2021-11-25 23:00:00')
-endtime = UTCDateTime('2021-11-25 23:30:00')
-
-st = read_and_preprocessing(path_data,format,starttime, endtime, False)
-
-
-"""
