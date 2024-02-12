@@ -15,7 +15,7 @@ from threading import Timer
 import os
 import signal
 import pyautogui
-from seismic_dash_utils import read_and_preprocessing, open_browser, generate_title, prepare_time_plot, update_layout
+from seismic_dash_utils import read_and_preprocessing, open_browser, generate_title, prepare_time_plot, update_layout, prepare_rsam, max_per_window
 import socket
 
 
@@ -94,7 +94,7 @@ sock.bind(('', 0))
 port = sock.getsockname()[1]
 del sock
 
-oversampling_factor = 10  # The higher, the more samples in the amplitude figure
+oversampling_factor = 50  # The higher, the more samples in the amplitude figure
 
 if start:
     starttime = UTCDateTime(start)
@@ -122,7 +122,11 @@ endtime = TR.stats.endtime
 
 fig2 = prepare_spectrogram(TR, 75, 130)
 trace = TR.copy()
-fig1 = prepare_time_plot(trace, oversampling_factor)
+num_samples = len(trace)
+target_num_samples = 1920
+factor = int(num_samples / (target_num_samples * oversampling_factor))
+max_per_window(trace, factor)  # Change the representation before computing RSAM
+fig1 = prepare_rsam(trace)
 if len(trace) != 0:
     layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
     fig1['layout'] = layout
@@ -296,7 +300,10 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
 
     if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', None]:
         fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
-        fig_1 = prepare_time_plot(tr=tr, oversampling_factor=oversampling_factor)
+        target_num_samples = 1920
+        factor = int(num_samples / (target_num_samples * oversampling_factor))
+        max_per_window(tr, factor)
+        fig_1 = prepare_rsam(tr)
         fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
         start_time = TR.stats.starttime
         end_time = TR.stats.endtime

@@ -236,6 +236,7 @@ def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
 
 def prepare_rsam(tr):
     n_samples = int(tr.meta.sampling_rate * 60 * 10)  # Amount to 10 minutes
+    print('Computing RSAM ...')
     tr.data = uniform_filter1d(abs(tr.data), size=n_samples)
     df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
     xlabel = "Date"
@@ -389,5 +390,5 @@ def max_per_window(tr, factor):
 
     tr.decimate(factor, no_filter=True)
     tr.data = data
-    df = pd.DataFrame({'data': data, 'times': tr.times('utcdatetime')})  # check for problems with date format
+    df = pd.DataFrame({'data': data, 'times': tr.times('utcdatetime')})
     return df
