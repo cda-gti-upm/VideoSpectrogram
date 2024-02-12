@@ -27,7 +27,7 @@ end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
 
-oversampling_factor = 50  # A higher value gives more samples to the plot
+oversampling_factor = 25  # A higher value gives more samples to the plot
 
 # Get a free random port
 sock = socket.socket()
@@ -172,7 +172,10 @@ app.layout = html.Div([
 def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
                 min_y_rsam, auto_y, auto_y_rsam, button, geo_sel, update, fig_1, fig_2):
     global TR
-
+    global initial_channel
+    global geophone
+    start_time = UTCDateTime(starttime_app)
+    end_time = UTCDateTime(endtime_app)
     if ctx.triggered_id == 'kill_button':
         # Close the app
         pyautogui.hotkey('ctrl', 'w')
@@ -181,46 +184,58 @@ def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, re
 
     if ctx.triggered_id == 'update':
         # Read new data
-        length = len(TR)
-        TR.data = np.zeros(length)
-        path = path_root + '_' + geo_sel + '_' + channel_selector
-        TR = read_and_preprocessing(path, format_in, UTCDateTime(starttime_app), UTCDateTime(endtime_app), filter_50Hz_f)
+        if channel_selector != initial_channel or geo_sel != geophone:  #  Read new data only if a parameter is changed
+            length = len(TR)
+            TR.data = np.zeros(length)
+            path = path_root + '_' + geo_sel + '_' + channel_selector
+            TR = read_and_preprocessing(path, format_in, start_time, end_time, filter_50Hz_f)
+            initial_channel = channel_selector
+            geophone = geo_sel
+            tr = TR.slice(start_time, end_time)
+            fig_1 = prepare_time_plot(tr, oversampling_factor)
+            fig_2 = prepare_rsam(tr)
+            start_time = TR.stats.starttime
+            end_time = TR.stats.endtime
+            if len(tr) != 0:
+                layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
+                fig_1['layout'] = layout
+                layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
+                fig_2['layout'] = layout_rsam
 
-    start_time = UTCDateTime(starttime_app)
-    end_time = UTCDateTime(endtime_app)
+    else:
 
-    if ctx.triggered_id in ['time_plot']:
-        if "xaxis.range[0]" in relayoutdata_1:
-            # Get start and end time the user selected on the amplitude plot
-            start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
-            end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+        if ctx.triggered_id in ['time_plot']:
+            if "xaxis.range[0]" in relayoutdata_1:
+                # Get start and end time the user selected on the amplitude plot
+                start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
+                end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
 
-    elif ctx.triggered_id in ['RSAM']:
-        if "xaxis.range[0]" in relayoutdata_2:
-            # Get start and end time the user selected on the RSAM plot
-            start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
-            end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
+        elif ctx.triggered_id in ['RSAM']:
+            if "xaxis.range[0]" in relayoutdata_2:
+                # Get start and end time the user selected on the RSAM plot
+                start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
+                end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
 
 
-    if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
-        # Management of the amplitude ranges
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
-        fig_1['layout'] = layout
-        layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
-        fig_2['layout'] = layout_rsam
-
-    if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM', None]:
-        # Computation of the new trace and figures
-        tr = TR.slice(start_time, end_time)
-        fig_1 = prepare_time_plot(tr, oversampling_factor)
-        fig_2 = prepare_rsam(tr)
-        start_time = TR.stats.starttime
-        end_time = TR.stats.endtime
-        if len(tr) != 0:
+        if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
+            # Management of the amplitude ranges
             layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
             fig_1['layout'] = layout
             layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
             fig_2['layout'] = layout_rsam
+
+        if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM', None]:
+            # Computation of the new trace and figures
+            tr = TR.slice(start_time, end_time)
+            fig_1 = prepare_time_plot(tr, oversampling_factor)
+            fig_2 = prepare_rsam(tr)
+            start_time = TR.stats.starttime
+            end_time = TR.stats.endtime
+            if len(tr) != 0:
+                layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
+                fig_1['layout'] = layout
+                layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
+                fig_2['layout'] = layout_rsam
 
     return (fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"),
             end_time.strftime("%Y-%m-%d %H:%M:%S"))

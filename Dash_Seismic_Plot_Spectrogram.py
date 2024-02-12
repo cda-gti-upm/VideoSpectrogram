@@ -94,7 +94,7 @@ sock.bind(('', 0))
 port = sock.getsockname()[1]
 del sock
 
-oversampling_factor = 50  # The higher, the more samples in the amplitude figure
+oversampling_factor = 25  # The higher, the more samples in the amplitude figure
 
 if start:
     starttime = UTCDateTime(start)
@@ -253,6 +253,10 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
            min_freq, auto_y, button, geo_sel, update, s_min, s_max, fig_1, fig_2):
     print(f'El trigger es {ctx.triggered_id}')
     global TR
+    global initial_channel
+    global geophone
+    start_time = UTCDateTime(startdate)
+    end_time = UTCDateTime(enddate)
     if ctx.triggered_id == 'kill_button':
         # Close the app
         pyautogui.hotkey('ctrl', 'w')
@@ -260,49 +264,59 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
         os.kill(pid, signal.SIGTERM)
 
     if ctx.triggered_id == 'update':
-        # Read new data
-        TR.data = np.zeros(len(TR))
-        path = path_root + '_' + geo_sel + '_' + channel_selector
-        TR = read_and_preprocessing(path, format_in, UTCDateTime(startdate), UTCDateTime(enddate), filter_50Hz_f)
+        if channel_selector != initial_channel or geo_sel != geophone:  # Read new data only if a parameter is changed
+            # Read new data
+            initial_channel = channel_selector
+            geophone = geo_sel
+            TR.data = np.zeros(len(TR))
+            path = path_root + '_' + geo_sel + '_' + channel_selector
+            TR = read_and_preprocessing(path, format_in, start_time, end_time, filter_50Hz_f)
+            tr = TR.slice(start_time, end_time)
+            fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
+            fig_1 = prepare_time_plot(tr=tr, oversampling_factor=oversampling_factor)
+            fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
+            start_time = TR.stats.starttime
+            end_time = TR.stats.endtime
+            if len(tr) != 0:
+                layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
+                fig_1['layout'] = layout
 
-    start_time = UTCDateTime(startdate)
-    end_time = UTCDateTime(enddate)
+    else:
+        if ctx.triggered_id in ['time_plot']:
+            if "xaxis.range[0]" in relayoutdata_1:
+                # Get start and end time the user selected on the amplitude plot
+                start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
+                end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
 
-    if ctx.triggered_id in ['time_plot']:
-        if "xaxis.range[0]" in relayoutdata_1:
-            # Get start and end time the user selected on the amplitude plot
-            start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
-            end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+        if ctx.triggered_id in ['spectrogram']:
+            if "xaxis.range[0]" in relayoutdata_2:
+                # Get start and end time the user selected on the spectrogram
+                start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
+                end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
 
-    if ctx.triggered_id in ['spectrogram']:
-        if "xaxis.range[0]" in relayoutdata_2:
-            # Get start and end time the user selected on the spectrogram
-            start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
-            end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
+        tr = TR.slice(start_time, end_time)
 
-    tr = TR.slice(start_time, end_time)
-
-    if ctx.triggered_id in ['max', 'min', 'auto']:
-        # Manage amplitude axis of the amplitude plot
-        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
-        fig_1['layout'] = layout
-    elif ctx.triggered_id in ['max_freq', 'min_freq']:
-        # Maximum and minimum displayed frequencies
-        fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
-    elif ctx.triggered_id in ['Smax', 'Smin']:
-        # Maximum and minimum displayed spectrogram power values
-        fig_2['layout']['coloraxis']['cmax'] = s_max
-        fig_2['layout']['coloraxis']['cmin'] = s_min
-
-    if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', None]:
-        fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
-        fig_1 = prepare_time_plot(tr=tr, oversampling_factor=oversampling_factor)
-        fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
-        start_time = TR.stats.starttime
-        end_time = TR.stats.endtime
-        if len(tr) != 0:
+        if ctx.triggered_id in ['max', 'min', 'auto']:
+            # Manage amplitude axis of the amplitude plot
             layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
             fig_1['layout'] = layout
+        elif ctx.triggered_id in ['max_freq', 'min_freq']:
+            # Maximum and minimum displayed frequencies
+            fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
+        elif ctx.triggered_id in ['Smax', 'Smin']:
+            # Maximum and minimum displayed spectrogram power values
+            fig_2['layout']['coloraxis']['cmax'] = s_max
+            fig_2['layout']['coloraxis']['cmin'] = s_min
+
+        if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', None]:
+            fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
+            fig_1 = prepare_time_plot(tr=tr, oversampling_factor=oversampling_factor)
+            fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
+            start_time = TR.stats.starttime
+            end_time = TR.stats.endtime
+            if len(tr) != 0:
+                layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
+                fig_1['layout'] = layout
 
     return fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S")
 
