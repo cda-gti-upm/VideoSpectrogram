@@ -13,6 +13,8 @@ import signal
 import pyautogui
 import socket
 from seismic_dash_utils import (open_browser, get_3_channel_figures, update_layout_3_channels)
+import plotly.graph_objs as go
+
 
 
 args = sys.argv
@@ -50,7 +52,6 @@ else:
 [fig1, fig2, fig3, starttime, endtime] = get_3_channel_figures(starttime, endtime, geophone, filter_50Hz_f, path_root, oversampling_factor, format_in)
 
 
-
 # Creating app layout:
 
 app = Dash(__name__)
@@ -74,6 +75,8 @@ app.layout = html.Div([
              style={'display': 'inline-block'},),
          '  ',
          html.Button('Read new data', id='update', n_clicks=0),
+         '  ',
+         html.Button('Export in SVG', id='export', n_clicks=0),
          '   ',
          html.Button('Close app', id='kill_button', n_clicks=0)],
     ),
@@ -159,12 +162,13 @@ app.layout = html.Div([
     Input('kill_button', 'n_clicks'),
     State('geophone_selector', 'value'),
     Input('update', 'n_clicks'),
+    Input('export', 'n_clicks'),
     State('x_plot', 'figure'),
     State('y_plot', 'figure'),
     State('z_plot', 'figure'),
 )
 def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
-                min_y, max_z, min_z, auto_x, auto_y, auto_z, button, geo_sel, update, fig_1, fig_2, fig_3):
+                min_y, max_z, min_z, auto_x, auto_y, auto_z, button, geo_sel, update, export_button, fig_1, fig_2, fig_3):
 
     print(relayoutdata_1)
     print(relayoutdata_2)
@@ -172,6 +176,18 @@ def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, rela
     start_time = UTCDateTime(starttime_app)
     end_time = UTCDateTime(endtime_app)
     print(f'El trigger es {ctx.triggered_id}')
+
+    if ctx.triggered_id == 'export':
+        if not os.path.exists("./exports"):
+            os.mkdir("./exports")
+
+        figx = go.Figure(data=fig_1['data'], layout=fig_1['layout'])
+        figx.write_image(file="./exports/figx.svg", format="svg", width=1920, height=1080, scale=1)
+        figy = go.Figure(data=fig_2['data'], layout=fig_2['layout'])
+        figy.write_image(file="./exports/figy.svg", format="svg", width=1920, height=1080, scale=1)
+        figz = go.Figure(data=fig_3['data'], layout=fig_3['layout'])
+        figz.write_image(file="./exports/figz.svg", format="svg", width=1920, height=1080, scale=1)
+
 
     if ctx.triggered_id == 'kill_button':
         pyautogui.hotkey('ctrl', 'w')
@@ -182,6 +198,7 @@ def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, rela
         [fig_1, fig_2, fig_3, start_time, end_time] = get_3_channel_figures(start_time, end_time, geo_sel,
                                                                             filter_50Hz_f, path_root,
                                                                             oversampling_factor, format_in)
+
 
     if ctx.triggered_id in ['x_plot', 'y_plot', 'z_plot']:
         if "xaxis.range[0]" in relayoutdata_1:
