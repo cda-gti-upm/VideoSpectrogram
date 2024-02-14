@@ -192,7 +192,7 @@ def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, re
 
     if ctx.triggered_id == 'update':
         # Read new data
-        if channel_selector != initial_channel or geo_sel != geophone:  #  Read new data only if a parameter is changed
+        if channel_selector != initial_channel or geo_sel != geophone or starttime != start_time or endtime != endtime:  #  Read new data only if a parameter is changed
             length = len(TR)
             TR.data = np.zeros(length)
             path = path_root + '_' + geo_sel + '_' + channel_selector

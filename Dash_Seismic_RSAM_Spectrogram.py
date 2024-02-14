@@ -273,7 +273,7 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
         print('Export completed.')
 
     if ctx.triggered_id == 'update':
-        if channel_selector != initial_channel or geo_sel != geophone:  # Read new data only if a parameter is changed
+        if channel_selector != initial_channel or geo_sel != geophone or starttime != start_time or endtime != endtime:  # Read new data only if a parameter is changed
             # Read new data
             initial_channel = channel_selector
             geophone = geo_sel
