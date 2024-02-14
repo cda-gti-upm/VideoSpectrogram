@@ -15,8 +15,9 @@ from threading import Timer
 import os
 import signal
 import pyautogui
-from seismic_dash_utils import read_and_preprocessing, open_browser, generate_title, prepare_time_plot, update_layout, prepare_rsam, max_per_window
+from seismic_dash_utils import read_and_preprocessing, open_browser, generate_title, update_layout, prepare_rsam, max_per_window
 import socket
+import plotly.graph_objs as go
 
 
 def prepare_spectrogram(tr, s_min, s_max):
@@ -81,12 +82,13 @@ start = args[3]
 end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
-win_length = int(args[7])
-hop_length = int(args[8])
-n_fft = int(args[9])
-window = args[10]
-S_max = int(args[11])
-S_min = int(args[12])
+location = args[7]
+win_length = int(args[8])
+hop_length = int(args[9])
+n_fft = int(args[10])
+window = args[11]
+S_max = int(args[12])
+S_min = int(args[13])
 
 # Get a random free port
 sock = socket.socket()
@@ -169,6 +171,8 @@ app.layout = html.Div([
          '  ',
          html.Button('Read new data', id='update', n_clicks=0),
          '  ',
+         html.Button('Export in SVG', id='export', n_clicks=0),
+         '  ',
          html.Button('Close app', id='kill_button', n_clicks=0)],
     ),
 
@@ -246,6 +250,7 @@ app.layout = html.Div([
     Input('min_freq', 'value'),
     Input('auto', 'value'),
     Input('kill_button', 'n_clicks'),
+    Input('export', 'n_clicks'),
     State('geophone_selector', 'value'),
     Input('update', 'n_clicks'),
     Input('Smin', 'value'),
@@ -254,7 +259,7 @@ app.layout = html.Div([
     State('spectrogram', 'figure')
 )
 def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_freq,
-           min_freq, auto_y, button, geo_sel, update, s_min, s_max, fig_1, fig_2):
+           min_freq, auto_y, button, esport_button, geo_sel, update, s_min, s_max, fig_1, fig_2):
     print(f'El trigger es {ctx.triggered_id}')
     global TR
     global initial_channel
@@ -266,6 +271,18 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
+
+    if ctx.triggered_id == 'export':
+        if not os.path.exists("./exports"):
+            os.mkdir("./exports")
+
+        fig1 = go.Figure(data=fig_1['data'], layout=fig_1['layout'])
+        file_title = fig1['layout']['title']['text']
+        fig1.write_image(file=f"./exports/{file_title}.svg", format="svg", width=1920, height=1080, scale=1)
+        fig2 = go.Figure(data=fig_2['data'], layout=fig_2['layout'])
+        file_title = fig2['layout']['title']['text']
+        fig2.write_image(file=f"./exports/{file_title}.svg", format="svg", width=3840, height=2160, scale=1)
+        print('Export completed.')
 
     if ctx.triggered_id == 'update':
         if channel_selector != initial_channel or geo_sel != geophone:  # Read new data only if a parameter is changed
@@ -316,7 +333,7 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
             fig_2['layout']['coloraxis']['cmax'] = s_max
             fig_2['layout']['coloraxis']['cmin'] = s_min
 
-        if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', None]:
+        if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', 'export', None]:
             fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
             target_num_samples = 1920
             factor = int(num_samples / (target_num_samples * oversampling_factor))
@@ -333,7 +350,7 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
 
 
 # Run the app
-Timer(1, open_browser, args=(port,)).start()
+Timer(5, open_browser, args=(port,)).start()
 app.run_server(debug=False, port=port)
 
 

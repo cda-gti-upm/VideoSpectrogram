@@ -14,6 +14,7 @@ import os
 import signal
 import pyautogui
 import socket
+import plotly.graph_objs as go
 from seismic_dash_utils import (read_and_preprocessing, open_browser, prepare_time_plot,
                                 update_layout, prepare_rsam, update_layout_rsam)
 
@@ -26,6 +27,7 @@ start = args[3]
 end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
+location = args[7]
 
 oversampling_factor = 25  # A higher value gives more samples to the plot
 
@@ -51,7 +53,7 @@ else:
     filter_50Hz_f = False
 
 
-path_root = './data/CSIC_LaPalma'
+path_root = f'./data/CSIC_{location}'
 data_path = path_root + '_' + geophone + '_' + initial_channel
 print(f' Data path is: {data_path}')
 TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
@@ -104,6 +106,8 @@ app.layout = html.Div([
              style={'display': 'inline-block'}),
          '  ',
          html.Button('Read new data', id='update', n_clicks=0),
+         '  ',
+         html.Button('Export in SVG', id='export', n_clicks=0),
          '  ',
          html.Button('Close app', id='kill_button', n_clicks=0)]
     ),
@@ -164,13 +168,14 @@ app.layout = html.Div([
     Input('auto', 'value'),
     Input('auto_RSAM', 'value'),
     Input('kill_button', 'n_clicks'),
+    Input('export', 'n_clicks'),
     State('geophone_selector', 'value'),
     Input('update', 'n_clicks'),
     State('time_plot', 'figure'),
     State('RSAM', 'figure'),
 )
 def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
-                min_y_rsam, auto_y, auto_y_rsam, button, geo_sel, update, fig_1, fig_2):
+                min_y_rsam, auto_y, auto_y_rsam, button, export_button, geo_sel, update, fig_1, fig_2):
     global TR
     global initial_channel
     global geophone
@@ -181,6 +186,18 @@ def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, re
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
+
+    if ctx.triggered_id == 'export':
+        if not os.path.exists("./exports"):
+            os.mkdir("./exports")
+
+        fig1 = go.Figure(data=fig_1['data'], layout=fig_1['layout'])
+        file_title = fig1['layout']['title']['text']
+        fig1.write_image(file=f"./exports/{file_title}.svg", format="svg", width=1920, height=1080, scale=1)
+        fig2 = go.Figure(data=fig_2['data'], layout=fig_2['layout'])
+        file_title = fig2['layout']['title']['text']
+        fig2.write_image(file=f"./exports/{file_title}.svg", format="svg", width=1920, height=1080, scale=1)
+        print('Export completed.')
 
     if ctx.triggered_id == 'update':
         # Read new data
@@ -224,7 +241,7 @@ def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, re
             layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
             fig_2['layout'] = layout_rsam
 
-        if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM', None]:
+        if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM', 'export', None]:
             # Computation of the new trace and figures
             tr = TR.slice(start_time, end_time)
             fig_1 = prepare_time_plot(tr, oversampling_factor)
@@ -242,7 +259,7 @@ def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, re
 
 
 # Run the app
-Timer(1, open_browser, args=(port,)).start()
+Timer(5, open_browser, args=(port,)).start()
 app.run_server(debug=False, port=port)
 
 

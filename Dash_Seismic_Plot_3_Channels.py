@@ -23,6 +23,7 @@ start = args[2]
 end = args[3]
 filt_50Hz = args[4]
 format_in = args[5]
+location = args[6]
 
 oversampling_factor = 40
 sock = socket.socket()
@@ -31,7 +32,7 @@ port = sock.getsockname()[1]
 del sock
 
 styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
-path_root = './data/CSIC_LaPalma'
+path_root = f'./data/CSIC_{location}'
 
 if start:
     starttime = UTCDateTime(start)
@@ -170,23 +171,30 @@ app.layout = html.Div([
 def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
                 min_y, max_z, min_z, auto_x, auto_y, auto_z, button, geo_sel, update, export_button, fig_1, fig_2, fig_3):
 
-    print(relayoutdata_1)
-    print(relayoutdata_2)
-    print(relayoutdata_3)
     start_time = UTCDateTime(starttime_app)
     end_time = UTCDateTime(endtime_app)
-    print(f'El trigger es {ctx.triggered_id}')
-
     if ctx.triggered_id == 'export':
         if not os.path.exists("./exports"):
             os.mkdir("./exports")
 
-        figx = go.Figure(data=fig_1['data'], layout=fig_1['layout'])
+        lay_1 = fig_1['layout']
+        title_1 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel X, from {start_time} until {endtime}'
+        lay_1['title'] = {'font': {'size': 13}, 'text': title_1, 'x': 0.5, 'yanchor': 'top'}
+        figx = go.Figure(data=fig_1['data'], layout=lay_1)
         figx.write_image(file="./exports/figx.svg", format="svg", width=1920, height=1080, scale=1)
-        figy = go.Figure(data=fig_2['data'], layout=fig_2['layout'])
+
+        lay_2 = fig_2['layout']
+        title_2 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel Y, from {start_time} until {endtime}'
+        lay_2['title'] = {'font': {'size': 13}, 'text': title_2, 'x': 0.5, 'yanchor': 'top'}
+        figy = go.Figure(data=fig_2['data'], layout=lay_2)
         figy.write_image(file="./exports/figy.svg", format="svg", width=1920, height=1080, scale=1)
-        figz = go.Figure(data=fig_3['data'], layout=fig_3['layout'])
+
+        lay_3 = fig_3['layout']
+        title_3 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel Z, from {start_time} until {endtime}'
+        lay_3['title'] = {'font': {'size': 13}, 'text': title_3, 'x': 0.5, 'yanchor': 'top'}
+        figz = go.Figure(data=fig_3['data'], layout=lay_3)
         figz.write_image(file="./exports/figz.svg", format="svg", width=1920, height=1080, scale=1)
+        print('Export completed.')
 
 
     if ctx.triggered_id == 'kill_button':
@@ -202,7 +210,6 @@ def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, rela
 
     if ctx.triggered_id in ['x_plot', 'y_plot', 'z_plot']:
         if "xaxis.range[0]" in relayoutdata_1:
-            print('rel_1')
             start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
             fig_2['layout']['xaxis']['autorange'] = False
@@ -213,7 +220,6 @@ def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, rela
 
 
         elif "xaxis.range[0]" in relayoutdata_2:
-            print('rel_2')
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
             fig_1['layout']['xaxis']['autorange'] = False
@@ -224,7 +230,6 @@ def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, rela
 
 
         elif "xaxis.range[0]" in relayoutdata_3:
-            print('rel_3')
             start_time = UTCDateTime(relayoutdata_3['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_3['xaxis.range[1]'])
             fig_1['layout']['xaxis']['autorange'] = False
@@ -234,7 +239,6 @@ def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, rela
             fig_2['layout']['xaxis']['range'] = [start_time, end_time]
 
         else:
-            print('autosize')
             start_time = UTCDateTime(fig_1['data'][0]['x'][0])
             end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
 
@@ -242,20 +246,18 @@ def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, rela
             fig_2['layout']['xaxis']['autorange'] = True
             fig_3['layout']['xaxis']['autorange'] = True
 
-
-        print(start_time)
-        print(end_time)
-        layout1 = update_layout_3_channels(fig_1, start_time, end_time, min_x, max_x, auto_x)
-        fig_1['layout'] = layout1
-        layout2 = update_layout_3_channels(fig_2, start_time, end_time, min_y, max_y, auto_y)
-        fig_2['layout'] = layout2
-        layout3 = update_layout_3_channels(fig_3, start_time, end_time, min_z, max_z, auto_z)
-        fig_3['layout'] = layout3
+        if ctx.triggered_id != 'export':
+            layout1 = update_layout_3_channels(fig_1, start_time, end_time, min_x, max_x, auto_x)
+            fig_1['layout'] = layout1
+            layout2 = update_layout_3_channels(fig_2, start_time, end_time, min_y, max_y, auto_y)
+            fig_2['layout'] = layout2
+            layout3 = update_layout_3_channels(fig_3, start_time, end_time, min_z, max_z, auto_z)
+            fig_3['layout'] = layout3
 
     return (fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True},
             start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S"))
 
 
  # Run the app
-Timer(1, open_browser, args=(port,)).start()
+Timer(5, open_browser, args=(port,)).start()
 app.run_server(debug=False, port=port)
