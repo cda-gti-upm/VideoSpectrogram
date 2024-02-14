@@ -269,7 +269,7 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
         fig1.write_image(file=f"./exports/{file_title}.svg", format="svg", width=1920, height=1080, scale=1)
         fig2 = go.Figure(data=fig_2['data'], layout=fig_2['layout'])
         file_title = fig2['layout']['title']['text']
-        fig2.write_image(file=f"./exports/{file_title}.svg", format="svg", width=3840, height=2160, scale=1)
+        fig2.write_image(file=f"./exports/{file_title}.svg", format="svg", width=1920, height=1080, scale=1)
         print('Export completed.')
 
     if ctx.triggered_id == 'update':
