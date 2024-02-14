@@ -57,18 +57,9 @@ path_root = f'./data/CSIC_{location}'
 data_path = path_root + '_' + geophone + '_' + initial_channel
 print(f' Data path is: {data_path}')
 TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
-trace = TR.copy()
+
 starttime = TR.stats.starttime
 endtime = TR.stats.endtime
-
-fig1 = prepare_time_plot(trace, oversampling_factor)
-if len(trace) != 0:
-    layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
-    fig1['layout'] = layout
-
-fig2 = prepare_rsam(trace)
-del trace
-
 
 # Creating app layout:
 app = Dash(__name__)
@@ -133,19 +124,19 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min_RSAM',
                           type='number',
-                          value=None,
+                          value=0,
                           debounce=True),
                       ' ',
                       dcc.Input(
                           id='max_RSAM',
                           type='number',
-                          value=None,
+                          value=0,
                           debounce=True)],
             style={'display': 'inline-block'}),],
         style={'display': 'flex'}),
 
-    dcc.Graph(id='time_plot', figure=fig1, style={'width': '170vh', 'height': '40vh'}),
-    dcc.Graph(id='RSAM', figure=fig2, style={'width': '170vh', 'height': '40vh'})
+    dcc.Graph(id='time_plot', figure=go.Figure(), style={'width': '170vh', 'height': '40vh'}, relayoutData={'autosize': True}),
+    dcc.Graph(id='RSAM', figure=go.Figure(), style={'width': '170vh', 'height': '40vh'}, relayoutData={'autosize': True})
 ])
 
 
@@ -241,7 +232,7 @@ def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, re
             layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
             fig_2['layout'] = layout_rsam
 
-        if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM', 'export', None]:
+        if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM', 'export']:
             # Computation of the new trace and figures
             tr = TR.slice(start_time, end_time)
             fig_1 = prepare_time_plot(tr, oversampling_factor)

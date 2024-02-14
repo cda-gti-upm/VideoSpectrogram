@@ -131,9 +131,9 @@ app.layout = html.Div([
                       )],
             style={'display': 'in-line-block'})],
         style={'display': 'flex'}),
-    dcc.Graph(id='x_plot', figure=fig1, style={'width': '170vh', 'height': '25vh'}),
-    dcc.Graph(id='y_plot', figure=fig2, style={'width': '170vh', 'height': '25vh'}),
-    dcc.Graph(id='z_plot', figure=fig3, style={'width': '170vh', 'height': '25vh'})
+    dcc.Graph(id='x_plot', figure=fig1, style={'width': '170vh', 'height': '25vh'}, relayoutData={'autosize': True}),
+    dcc.Graph(id='y_plot', figure=fig2, style={'width': '170vh', 'height': '25vh'}, relayoutData={'autosize': True}),
+    dcc.Graph(id='z_plot', figure=fig3, style={'width': '170vh', 'height': '25vh'}, relayoutData={'autosize': True})
 ])
 
 

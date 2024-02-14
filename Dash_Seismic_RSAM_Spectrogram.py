@@ -122,18 +122,6 @@ TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50H
 starttime = TR.stats.starttime
 endtime = TR.stats.endtime
 
-fig2 = prepare_spectrogram(TR, 75, 130)
-trace = TR.copy()
-num_samples = len(trace)
-target_num_samples = 1920
-factor = int(num_samples / (target_num_samples * oversampling_factor))
-max_per_window(trace, factor)  # Change the representation before computing RSAM
-fig1 = prepare_rsam(trace)
-if len(trace) != 0:
-    layout = update_layout(fig1['layout'], None, None, ['autorange'], fig1)
-    fig1['layout'] = layout
-del trace
-
 # Creating app layout:
 
 app = Dash(__name__)
@@ -227,8 +215,8 @@ app.layout = html.Div([
             style={'display': 'in-line-block'})],
         style={'display': 'flex'}),
 
-    dcc.Graph(id='time_plot', figure=fig1, style={'width': '164.5vh', 'height': '30vh'}),
-    dcc.Graph(id='spectrogram', figure=fig2, style={'width': '170vh', 'height': '50vh'})
+    dcc.Graph(id='time_plot', figure=go.Figure(), style={'width': '164.5vh', 'height': '30vh'}, relayoutData={'autosize': True}),
+    dcc.Graph(id='spectrogram', figure=go.Figure(), style={'width': '170vh', 'height': '50vh'}, relayoutData={'autosize': True})
 ])
 
 
@@ -294,6 +282,7 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
             TR = read_and_preprocessing(path, format_in, start_time, end_time, filter_50Hz_f)
             tr = TR.slice(start_time, end_time)
             fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
+            num_samples = len(tr)
             target_num_samples = 1920
             factor = int(num_samples / (target_num_samples * oversampling_factor))
             max_per_window(tr, factor)
@@ -333,8 +322,9 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
             fig_2['layout']['coloraxis']['cmax'] = s_max
             fig_2['layout']['coloraxis']['cmin'] = s_min
 
-        if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', 'export', None]:
+        if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', 'export']:
             fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
+            num_samples = len(tr)
             target_num_samples = 1920
             factor = int(num_samples / (target_num_samples * oversampling_factor))
             max_per_window(tr, factor)
