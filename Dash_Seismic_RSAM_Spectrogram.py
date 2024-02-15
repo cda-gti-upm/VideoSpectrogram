@@ -15,69 +15,15 @@ from threading import Timer
 import os
 import signal
 import pyautogui
-from seismic_dash_utils import read_and_preprocessing, open_browser, generate_title, update_layout, prepare_rsam, max_per_window
+from seismic_dash_utils import read_and_preprocessing, open_browser, prepare_spectrogram, update_layout, prepare_rsam, max_per_window
 import socket
 import plotly.graph_objs as go
 
 
-def prepare_spectrogram(tr, s_min, s_max):
-
-    """
-        Computation of the spectrogram and generation of the figure. If the number of samples of the spectrogram is
-        greater than 100 times the horizontal resolution of the screen (default 1920), the LTSA is computed. If not, a
-        standard spectrogram.
-    """
-    print(f'Preparing figure...')
-    print('Updating dates...')
-    res = 1920
-    num_samples = math.ceil(len(tr.data) / hop_length)
-    if num_samples > (res * 100):
-        print('COMPUTATION OF LTSA')
-        d = seismicLTSA(tr.data, tr.meta.sampling_rate)
-        params = {'div_len': int(np.round(len(tr.data) / res)),  # Length in numer of samples
-                  'subdiv_len': win_length,
-                  'nfft': n_fft,
-                  'noverlap': hop_length}
-        d.set_params(params)
-
-        # compute the LTSA -- identical to s.compute()
-        d.compute(ref=1, amin=1e-5, top_db=None)
-        S_db = d.ltsa
-        frame_indices = np.arange(S_db.shape[1])
-        time_rel = (np.asanyarray(frame_indices) * d.div_len + (d.div_len / 2)).astype(int) / float(
-            tr.meta.sampling_rate)
-        freqs = np.arange(0, n_fft / 2) * tr.meta.sampling_rate / n_fft
-
-    else:
-        print('COMPUTATION OF COMPLETE SPECTROGRAM')
-        d = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
-        S_db = librosa.amplitude_to_db(np.abs(d), ref=1, amin=1e-5, top_db=None)
-        frame_indices = np.arange(d.shape[1])
-        time_rel = librosa.frames_to_time(frame_indices, sr=tr.meta.sampling_rate, hop_length=hop_length, n_fft=None)
-        freqs = np.arange(0, 1 + n_fft / 2) * tr.meta.sampling_rate / n_fft
-
-    time_abs = list([tr.stats.starttime + time_rel[0]])
-    time_abs[0] = tr.stats.starttime + time_rel[0]
-    for i in range(1, len(time_rel)):
-        time_abs.append(tr.stats.starttime + time_rel[i])
-    title = generate_title(tr, 'Spectrogram')
-    fig = px.imshow(S_db, x=time_abs, y=freqs, origin='lower',
-                    labels={'y': 'Frequency (Hz)', 'color': 'Power (dB)'},
-                    color_continuous_scale='jet', zmin=s_min, zmax=s_max)
-    fig['layout']['yaxis']['autorange'] = False
-    fig['layout']['yaxis']['range'] = [5, 125]
-    fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
-    fig['layout']['margin'] = {'t': 30, 'b': 30}
-    fig['layout']['xaxis']['automargin'] = False
-
-    return fig
-
-
 # Get arguments
 args = sys.argv
-print(args)
-geophone = args[1]
-initial_channel = args[2]
+GEOPHONE = args[1]
+CHANNEL = args[2]
 start = args[3]
 end = args[4]
 filt_50Hz = args[5]
@@ -99,13 +45,13 @@ del sock
 oversampling_factor = 25  # The higher, the more samples in the amplitude figure
 
 if start:
-    starttime = UTCDateTime(start)
+    STARTTIME = UTCDateTime(start)
 else:
-    starttime = None
+    STARTTIME = None
 if end:
-    endtime = UTCDateTime(end)
+    ENDTIME = UTCDateTime(end)
 else:
-    endtime = None
+    ENDTIME = None
 
 
 if filt_50Hz == 's':
@@ -115,12 +61,12 @@ else:
 
 
 path_root = './data/CSIC_LaPalma'
-data_path = path_root + '_' + geophone + '_' + initial_channel
+data_path = path_root + '_' + GEOPHONE + '_' + CHANNEL
 
-TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
+TR = read_and_preprocessing(data_path, format_in, STARTTIME, ENDTIME, filter_50Hz_f)
 
-starttime = TR.stats.starttime
-endtime = TR.stats.endtime
+STARTTIME = TR.stats.starttime
+ENDTIME = TR.stats.endtime
 
 # Creating app layout:
 
@@ -128,7 +74,7 @@ app = Dash(__name__)
 app.layout = html.Div([
     dcc.Dropdown(
         ['Geophone1', 'Geophone2', 'Geophone3', 'Geophone4', 'Geophone5', 'Geophone6', 'Geophone7', 'Geophone8'],
-        id='geophone_selector', value=geophone),
+        id='geophone_selector', value=GEOPHONE),
     html.Div(
         ['Channel: ',
          dcc.RadioItems(
@@ -138,7 +84,7 @@ app.layout = html.Div([
                  {'label': 'Channel Y   ', 'value': 'Y'},
                  {'label': 'Channel Z   ', 'value': 'Z'}
              ],
-             value=initial_channel,
+             value=CHANNEL,
              style={'display': 'inline-block'})],
     ),
     html.Div(
@@ -146,14 +92,14 @@ app.layout = html.Div([
          dcc.Input(
              id='startdate',
              type='text',
-             value=starttime.strftime("%Y-%m-%d %H:%M:%S"),
+             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S"),
              debounce=True,
              style={'display': 'inline-block'}
          ),
          dcc.Input(
              id='enddate',
              type='text',
-             value=endtime.strftime("%Y-%m-%d %H:%M:%S"),
+             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S"),
              debounce=True,
              style={'display': 'inline-block'}),
          '  ',
@@ -227,6 +173,7 @@ app.layout = html.Div([
     Output('spectrogram', 'relayoutData'),
     Output('startdate', 'value'),
     Output('enddate', 'value'),
+    State('geophone_selector', 'value'),
     State('channel_selector', 'value'),
     Input('startdate', 'value'),
     Input('enddate', 'value'),
@@ -239,19 +186,20 @@ app.layout = html.Div([
     Input('auto', 'value'),
     Input('kill_button', 'n_clicks'),
     Input('export', 'n_clicks'),
-    State('geophone_selector', 'value'),
     Input('update', 'n_clicks'),
     Input('Smin', 'value'),
     Input('Smax', 'value'),
     State('time_plot', 'figure'),
     State('spectrogram', 'figure')
 )
-def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_freq,
-           min_freq, auto_y, button, esport_button, geo_sel, update, s_min, s_max, fig_1, fig_2):
+def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_freq,
+           min_freq, auto_y, button, esport_button, update, s_min, s_max, fig_1, fig_2):
     print(f'El trigger es {ctx.triggered_id}')
     global TR
-    global initial_channel
-    global geophone
+    global CHANNEL
+    global GEOPHONE
+    global STARTTIME
+    global ENDTIME
     start_time = UTCDateTime(startdate)
     end_time = UTCDateTime(enddate)
     if ctx.triggered_id == 'kill_button':
@@ -263,7 +211,6 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
     if ctx.triggered_id == 'export':
         if not os.path.exists("./exports"):
             os.mkdir("./exports")
-
         fig1 = go.Figure(data=fig_1['data'], layout=fig_1['layout'])
         file_title = fig1['layout']['title']['text']
         fig1.write_image(file=f"./exports/{file_title}.svg", format="svg", width=1920, height=1080, scale=1)
@@ -273,15 +220,17 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
         print('Export completed.')
 
     if ctx.triggered_id == 'update':
-        if channel_selector != initial_channel or geo_sel != geophone or starttime != start_time or endtime != endtime:  # Read new data only if a parameter is changed
+        if channel_selector != CHANNEL or geo_sel != GEOPHONE or STARTTIME != start_time or ENDTIME != end_time:  # Read new data only if a parameter is changed
             # Read new data
-            initial_channel = channel_selector
-            geophone = geo_sel
+            CHANNEL = channel_selector
+            GEOPHONE = geo_sel
+            STARTTIME = start_time
+            ENDTIME = end_time
             TR.data = np.zeros(len(TR))
             path = path_root + '_' + geo_sel + '_' + channel_selector
             TR = read_and_preprocessing(path, format_in, start_time, end_time, filter_50Hz_f)
             tr = TR.slice(start_time, end_time)
-            fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
+            fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max, hop_length=hop_length, win_length=win_length, n_fft=n_fft, window=window)
             num_samples = len(tr)
             target_num_samples = 1920
             factor = int(num_samples / (target_num_samples * oversampling_factor))
@@ -296,13 +245,13 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
 
 
     else:
-        if ctx.triggered_id in ['time_plot']:
+        if ctx.triggered_id == 'time_plot':
             if "xaxis.range[0]" in relayoutdata_1:
                 # Get start and end time the user selected on the amplitude plot
                 start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
                 end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
 
-        if ctx.triggered_id in ['spectrogram']:
+        if ctx.triggered_id == 'spectrogram':
             if "xaxis.range[0]" in relayoutdata_2:
                 # Get start and end time the user selected on the spectrogram
                 start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
@@ -323,7 +272,7 @@ def update(channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2,
             fig_2['layout']['coloraxis']['cmin'] = s_min
 
         if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', 'export']:
-            fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
+            fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max, hop_length=hop_length, win_length=win_length, n_fft=n_fft, window=window)
             num_samples = len(tr)
             target_num_samples = 1920
             factor = int(num_samples / (target_num_samples * oversampling_factor))

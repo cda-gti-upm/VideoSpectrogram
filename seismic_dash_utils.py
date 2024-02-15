@@ -9,6 +9,8 @@ import obspy
 import numpy as np
 from tqdm import tqdm
 import math
+from ltsa.ltsa import seismicLTSA
+import librosa.display
 
 
 def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, verbose=True):
@@ -247,6 +249,59 @@ def prepare_rsam(tr):
     fig['layout']['margin'] = {'t': 30, 'b': 30}
     fig['layout']['xaxis']['automargin'] = False
     fig['layout']['yaxis']['autorange'] = True
+    return fig
+
+
+def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window):
+
+    """
+        Computation of the spectrogram and generation of the figure. If the number of samples of the spectrogram is
+        greater than 100 times the horizontal resolution of the screen (default 1920), the LTSA is computed. If not, a
+        standard spectrogram.
+    """
+    print(f'Preparing figure...')
+    print('Updating dates...')
+    res = 1920
+    num_samples = math.ceil(len(tr.data) / hop_length)
+    if num_samples > (res * 100):
+        print('COMPUTATION OF LTSA')
+        d = seismicLTSA(tr.data, tr.meta.sampling_rate)
+        params = {'div_len': int(np.round(len(tr.data) / res)),  # Length in numer of samples
+                  'subdiv_len': win_length,
+                  'nfft': n_fft,
+                  'noverlap': hop_length}
+        d.set_params(params)
+
+        # compute the LTSA -- identical to s.compute()
+        d.compute(ref=1, amin=1e-5, top_db=None)
+        S_db = d.ltsa
+        frame_indices = np.arange(S_db.shape[1])
+        time_rel = (np.asanyarray(frame_indices) * d.div_len + (d.div_len / 2)).astype(int) / float(
+            tr.meta.sampling_rate)
+        freqs = np.arange(0, n_fft / 2) * tr.meta.sampling_rate / n_fft
+
+    else:
+        print('COMPUTATION OF COMPLETE SPECTROGRAM')
+        d = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
+        S_db = librosa.amplitude_to_db(np.abs(d), ref=1, amin=1e-5, top_db=None)
+        frame_indices = np.arange(d.shape[1])
+        time_rel = librosa.frames_to_time(frame_indices, sr=tr.meta.sampling_rate, hop_length=hop_length, n_fft=None)
+        freqs = np.arange(0, 1 + n_fft / 2) * tr.meta.sampling_rate / n_fft
+
+    time_abs = list([tr.stats.starttime + time_rel[0]])
+    time_abs[0] = tr.stats.starttime + time_rel[0]
+    for i in range(1, len(time_rel)):
+        time_abs.append(tr.stats.starttime + time_rel[i])
+    title = generate_title(tr, 'Spectrogram')
+    fig = px.imshow(S_db, x=time_abs, y=freqs, origin='lower',
+                    labels={'y': 'Frequency (Hz)', 'color': 'Power (dB)'},
+                    color_continuous_scale='jet', zmin=s_min, zmax=s_max)
+    fig['layout']['yaxis']['autorange'] = False
+    fig['layout']['yaxis']['range'] = [5, 125]
+    fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
+    fig['layout']['margin'] = {'t': 30, 'b': 30}
+    fig['layout']['xaxis']['automargin'] = False
+
     return fig
 
 

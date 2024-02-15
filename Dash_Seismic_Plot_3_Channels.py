@@ -18,7 +18,7 @@ import plotly.graph_objs as go
 
 
 args = sys.argv
-geophone = args[1]
+GEOPHONE = args[1]
 start = args[2]
 end = args[3]
 filt_50Hz = args[4]
@@ -35,14 +35,14 @@ styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
 path_root = f'./data/CSIC_{location}'
 
 if start:
-    starttime = UTCDateTime(start)
+    STARTTIME = UTCDateTime(start)
 else:
-    starttime = None
+    STARTTIME = None
 
 if end:
-    endtime = UTCDateTime(end)
+    ENDTIME = UTCDateTime(end)
 else:
-    endtime = None
+    ENDTIME = None
 
 if filt_50Hz == 's':
     filter_50Hz_f = True
@@ -50,7 +50,7 @@ else:
     filter_50Hz_f = False
 
 
-[fig1, fig2, fig3, starttime, endtime] = get_3_channel_figures(starttime, endtime, geophone, filter_50Hz_f, path_root, oversampling_factor, format_in)
+[fig1, fig2, fig3, STARTTIME, ENDTIME] = get_3_channel_figures(STARTTIME, ENDTIME, GEOPHONE, filter_50Hz_f, path_root, oversampling_factor, format_in)
 
 
 # Creating app layout:
@@ -58,20 +58,20 @@ else:
 app = Dash(__name__)
 app.layout = html.Div([
     dcc.Dropdown(['Geophone1', 'Geophone2', 'Geophone3', 'Geophone4',
-                  'Geophone5', 'Geophone6', 'Geophone7', 'Geophone8'], id='geophone_selector', value=geophone),
+                  'Geophone5', 'Geophone6', 'Geophone7', 'Geophone8'], id='geophone_selector', value=GEOPHONE),
     html.Div(
         ['Select the start and end time (format: yyyy-mm-dd hh:mm:ss): ',
          dcc.Input(
              id='startdate',
              type='text',
-             value=starttime.strftime("%Y-%m-%d %H:%M:%S"),
+             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S"),
              style={'display': 'inline-block'},
              debounce=True
          ),
          dcc.Input(
              id='enddate',
              type='text',
-             value=endtime.strftime("%Y-%m-%d %H:%M:%S"),
+             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S"),
              debounce=True,
              style={'display': 'inline-block'},),
          '  ',
@@ -146,6 +146,7 @@ app.layout = html.Div([
     Output('z_plot', 'relayoutData'),
     Output('startdate', 'value'),
     Output('enddate', 'value'),
+    State('geophone_selector', 'value'),
     State('startdate', 'value'),
     State('enddate', 'value'),
     Input('x_plot', 'relayoutData'),
@@ -161,15 +162,14 @@ app.layout = html.Div([
     Input('auto_y', 'value'),
     Input('auto_z', 'value'),
     Input('kill_button', 'n_clicks'),
-    State('geophone_selector', 'value'),
     Input('update', 'n_clicks'),
     Input('export', 'n_clicks'),
     State('x_plot', 'figure'),
     State('y_plot', 'figure'),
     State('z_plot', 'figure'),
 )
-def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
-                min_y, max_z, min_z, auto_x, auto_y, auto_z, button, geo_sel, update, export_button, fig_1, fig_2, fig_3):
+def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
+                min_y, max_z, min_z, auto_x, auto_y, auto_z, button, update, export_button, fig_1, fig_2, fig_3):
 
     start_time = UTCDateTime(starttime_app)
     end_time = UTCDateTime(endtime_app)
@@ -178,19 +178,19 @@ def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, rela
             os.mkdir("./exports")
 
         lay_1 = fig_1['layout']
-        title_1 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel X, from {start_time} until {endtime}'
+        title_1 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel X, from {start_time} until {end_time}'
         lay_1['title'] = {'font': {'size': 13}, 'text': title_1, 'x': 0.5, 'yanchor': 'top'}
         figx = go.Figure(data=fig_1['data'], layout=lay_1)
         figx.write_image(file="./exports/figx.svg", format="svg", width=1920, height=1080, scale=1)
 
         lay_2 = fig_2['layout']
-        title_2 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel Y, from {start_time} until {endtime}'
+        title_2 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel Y, from {start_time} until {end_time}'
         lay_2['title'] = {'font': {'size': 13}, 'text': title_2, 'x': 0.5, 'yanchor': 'top'}
         figy = go.Figure(data=fig_2['data'], layout=lay_2)
         figy.write_image(file="./exports/figy.svg", format="svg", width=1920, height=1080, scale=1)
 
         lay_3 = fig_3['layout']
-        title_3 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel Z, from {start_time} until {endtime}'
+        title_3 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel Z, from {start_time} until {end_time}'
         lay_3['title'] = {'font': {'size': 13}, 'text': title_3, 'x': 0.5, 'yanchor': 'top'}
         figz = go.Figure(data=fig_3['data'], layout=lay_3)
         figz.write_image(file="./exports/figz.svg", format="svg", width=1920, height=1080, scale=1)
@@ -206,7 +206,6 @@ def update_plot(starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, rela
         [fig_1, fig_2, fig_3, start_time, end_time] = get_3_channel_figures(start_time, end_time, geo_sel,
                                                                             filter_50Hz_f, path_root,
                                                                             oversampling_factor, format_in)
-
 
     if ctx.triggered_id in ['x_plot', 'y_plot', 'z_plot']:
         if "xaxis.range[0]" in relayoutdata_1:

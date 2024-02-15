@@ -21,8 +21,8 @@ from seismic_dash_utils import (read_and_preprocessing, open_browser, prepare_ti
 
 # Get arguments
 args = sys.argv
-geophone = args[1]
-initial_channel = args[2]
+GEOPHONE = args[1]
+CHANNEL = args[2]
 start = args[3]
 end = args[4]
 filt_50Hz = args[5]
@@ -39,13 +39,13 @@ del sock
 
 
 if start:
-    starttime = UTCDateTime(start)
+    STARTTIME = UTCDateTime(start)
 else:
-    starttime = None
+    STARTTIME = None
 if end:
-    endtime = UTCDateTime(end)
+    ENDTIME = UTCDateTime(end)
 else:
-    endtime = None
+    ENDTIME = None
 
 if filt_50Hz == 's':
     filter_50Hz_f = True
@@ -54,18 +54,18 @@ else:
 
 
 path_root = f'./data/CSIC_{location}'
-data_path = path_root + '_' + geophone + '_' + initial_channel
+data_path = path_root + '_' + GEOPHONE + '_' + CHANNEL
 print(f' Data path is: {data_path}')
-TR = read_and_preprocessing(data_path, format_in, starttime, endtime, filter_50Hz_f)
+TR = read_and_preprocessing(data_path, format_in, STARTTIME, ENDTIME, filter_50Hz_f)
 
-starttime = TR.stats.starttime
-endtime = TR.stats.endtime
+STARTTIME = TR.stats.starttime
+ENDTIME = TR.stats.endtime
 
 # Creating app layout:
 app = Dash(__name__)
 app.layout = html.Div([
     dcc.Dropdown(['Geophone1', 'Geophone2', 'Geophone3', 'Geophone4', 'Geophone5', 'Geophone6', 'Geophone7',
-                  'Geophone8'], id='geophone_selector', value=geophone),
+                  'Geophone8'], id='geophone_selector', value=GEOPHONE),
     html.Div(
         ['Channel: ',
          dcc.RadioItems(
@@ -75,7 +75,7 @@ app.layout = html.Div([
                 {'label': 'Channel Y   ', 'value': 'Y'},
                 {'label': 'Channel Z   ', 'value': 'Z'}
             ],
-            value=initial_channel,
+            value=CHANNEL,
             style={'display': 'inline-block'})]
     ),
 
@@ -84,7 +84,7 @@ app.layout = html.Div([
          dcc.Input(
              id='startdate',
              type='text',
-             value=starttime.strftime("%Y-%m-%d %H:%M:%S"),
+             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S"),
              style={'display': 'inline-block'},
              debounce=True
          ),
@@ -92,7 +92,7 @@ app.layout = html.Div([
          dcc.Input(
              id='enddate',
              type='text',
-             value=endtime.strftime("%Y-%m-%d %H:%M:%S"),
+             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S"),
              debounce=True,
              style={'display': 'inline-block'}),
          '  ',
@@ -147,6 +147,7 @@ app.layout = html.Div([
     Output('RSAM', 'relayoutData'),
     Output('startdate', 'value'),
     Output('enddate', 'value'),
+    State('geophone_selector', 'value'),
     State('channel_selector', 'value'),
     State('startdate', 'value'),
     State('enddate', 'value'),
@@ -160,18 +161,20 @@ app.layout = html.Div([
     Input('auto_RSAM', 'value'),
     Input('kill_button', 'n_clicks'),
     Input('export', 'n_clicks'),
-    State('geophone_selector', 'value'),
     Input('update', 'n_clicks'),
     State('time_plot', 'figure'),
     State('RSAM', 'figure'),
 )
-def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
-                min_y_rsam, auto_y, auto_y_rsam, button, export_button, geo_sel, update, fig_1, fig_2):
+def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
+                min_y_rsam, auto_y, auto_y_rsam, button, export_button, update, fig_1, fig_2):
     global TR
-    global initial_channel
-    global geophone
+    global CHANNEL
+    global GEOPHONE
+    global STARTTIME
+    global ENDTIME
     start_time = UTCDateTime(starttime_app)
     end_time = UTCDateTime(endtime_app)
+
     if ctx.triggered_id == 'kill_button':
         # Close the app
         pyautogui.hotkey('ctrl', 'w')
@@ -181,7 +184,6 @@ def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, re
     if ctx.triggered_id == 'export':
         if not os.path.exists("./exports"):
             os.mkdir("./exports")
-
         fig1 = go.Figure(data=fig_1['data'], layout=fig_1['layout'])
         file_title = fig1['layout']['title']['text']
         fig1.write_image(file=f"./exports/{file_title}.svg", format="svg", width=1920, height=1080, scale=1)
@@ -192,13 +194,15 @@ def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, re
 
     if ctx.triggered_id == 'update':
         # Read new data
-        if channel_selector != initial_channel or geo_sel != geophone or starttime != start_time or endtime != endtime:  #  Read new data only if a parameter is changed
+        if channel_selector != CHANNEL or geo_sel != GEOPHONE or STARTTIME != start_time or ENDTIME != end_time:  #  Read new data only if a parameter is changed
             length = len(TR)
             TR.data = np.zeros(length)
             path = path_root + '_' + geo_sel + '_' + channel_selector
             TR = read_and_preprocessing(path, format_in, start_time, end_time, filter_50Hz_f)
-            initial_channel = channel_selector
-            geophone = geo_sel
+            CHANNEL = channel_selector
+            GEOPHONE = geo_sel
+            STARTTIME = start_time
+            ENDTIME = end_time
             tr = TR.slice(start_time, end_time)
             fig_1 = prepare_time_plot(tr, oversampling_factor)
             fig_2 = prepare_rsam(tr)
@@ -212,13 +216,13 @@ def update_plot(channel_selector, starttime_app, endtime_app, relayoutdata_1, re
 
     else:
 
-        if ctx.triggered_id in ['time_plot']:
+        if ctx.triggered_id == 'time_plot':
             if "xaxis.range[0]" in relayoutdata_1:
                 # Get start and end time the user selected on the amplitude plot
                 start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
                 end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
 
-        elif ctx.triggered_id in ['RSAM']:
+        elif ctx.triggered_id == 'RSAM':
             if "xaxis.range[0]" in relayoutdata_2:
                 # Get start and end time the user selected on the RSAM plot
                 start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
