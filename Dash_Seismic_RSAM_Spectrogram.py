@@ -92,14 +92,14 @@ app.layout = html.Div([
          dcc.Input(
              id='startdate',
              type='text',
-             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S"),
+             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S.%f"),
              debounce=True,
              style={'display': 'inline-block'}
          ),
          dcc.Input(
              id='enddate',
              type='text',
-             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S"),
+             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S.%f"),
              debounce=True,
              style={'display': 'inline-block'}),
          '  ',
@@ -285,7 +285,7 @@ def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayo
                 layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
                 fig_1['layout'] = layout
 
-    return fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S")
+    return fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 # Run the app

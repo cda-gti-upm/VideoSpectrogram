@@ -84,7 +84,7 @@ app.layout = html.Div([
          dcc.Input(
              id='startdate',
              type='text',
-             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S"),
+             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S.%f"),
              style={'display': 'inline-block'},
              debounce=True
          ),
@@ -92,7 +92,7 @@ app.layout = html.Div([
          dcc.Input(
              id='enddate',
              type='text',
-             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S"),
+             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S.%f"),
              debounce=True,
              style={'display': 'inline-block'}),
          '  ',
@@ -194,6 +194,7 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutd
 
     if ctx.triggered_id == 'update':
         # Read new data
+        print(f'{channel_selector}, {CHANNEL}, {geo_sel}, {GEOPHONE}, {STARTTIME}, {start_time}, {ENDTIME}, {end_time}')
         if channel_selector != CHANNEL or geo_sel != GEOPHONE or STARTTIME != start_time or ENDTIME != end_time:  #  Read new data only if a parameter is changed
             length = len(TR)
             TR.data = np.zeros(length)
@@ -241,16 +242,15 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutd
             tr = TR.slice(start_time, end_time)
             fig_1 = prepare_time_plot(tr, oversampling_factor)
             fig_2 = prepare_rsam(tr)
-            start_time = TR.stats.starttime
-            end_time = TR.stats.endtime
             if len(tr) != 0:
                 layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
                 fig_1['layout'] = layout
                 layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
                 fig_2['layout'] = layout_rsam
-
-    return (fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"),
-            end_time.strftime("%Y-%m-%d %H:%M:%S"))
+            start_time = TR.stats.starttime
+            end_time = TR.stats.endtime
+    return (fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S.%f"),
+            end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))
 
 
 # Run the app

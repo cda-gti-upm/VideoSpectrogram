@@ -92,14 +92,14 @@ app.layout = html.Div([
          dcc.Input(
              id='startdate',
              type='text',
-             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S"),
+             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S.%f"),
              debounce=True,
              style={'display': 'inline-block'}
          ),
          dcc.Input(
              id='enddate',
              type='text',
-             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S"),
+             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S.%f"),
              debounce=True,
              style={'display': 'inline-block'}),
          '  ',
@@ -267,7 +267,8 @@ def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayo
 
         if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', 'export']:
             tr = TR.slice(start_time, end_time)
-            fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max)
+            fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max, hop_length=hop_length, win_length=win_length,
+                                        n_fft=n_fft, window=window)
             fig_1 = prepare_time_plot(tr=tr, oversampling_factor=oversampling_factor)
             fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
             start_time = TR.stats.starttime
@@ -276,7 +277,7 @@ def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayo
                 layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
                 fig_1['layout'] = layout
 
-    return fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S")
+    return fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f")
 
 
 # Run the app
