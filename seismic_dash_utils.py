@@ -27,7 +27,7 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
     if endtime is None:
         endtime = UTCDateTime('2050-01-01')
 
-    print(f'Reading from {starttime} to {endtime}')
+    print(f'Reading data from {path_data} from {starttime} until {endtime}...')
     dirlist = sorted(os.listdir(path_data))
     if filter_50Hz_f:
         print('Filtering 50 Hz is activated...')
@@ -66,29 +66,31 @@ def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
         If no data is available, returns an empty obspy.Trace.
     """
     # Read data
-    print(f'Reading data ...')
     stream = read_data_from_folder(path, in_format, start, end, filter_50Hz_f)
 
     # Sort data
-    print(f'Sorting data ...')
+    print(f'Sorting data...')
     stream.sort(['starttime'])
 
     try:
         print(f'Data spans from {stream[0].stats.starttime} until {stream[-1].stats.endtime}')
         # Merge traces
-        print(f'Merging data ...')
+        print(f'Merging data...')
         stream.merge(method=0, fill_value=0)
         trace = stream[0]
         del stream
         '''
         if filter_50Hz_f:
-            print(f'Filtering 50 Hz ...')
+            print(f'Filtering 50 Hz...')
             trace.data = obspy.signal.filter.bandstop(trace.data, 49, 51, trace.meta.sampling_rate, corners=8,
                                                       zerophase=True)
         '''
+        #  Correct data anomalies
+        print('Correcting data anomalies...')
         trace = correct_data_anomalies(trace)
+
     except Exception as e:
-        print(f'Error reading data: {e}')
+        print(f'Error reading data or no data is available for selected parameters: {e}')
         trace = obspy.Trace()
 
     return trace
@@ -99,7 +101,7 @@ def get_start_end_time(path, format='PICKLE'):
         Returns the earliest start time and latest end time of all the PICKLE files in the path. Needed for the 3
         channel plot implementation, if a channel of one geophone do not have complete data for a time interval.
     """
-    print(f'Checking start and end time of available data in {path} ...')
+    print(f'Checking start and end time of available data in {path}...')
     dirlist = sorted(os.listdir(path))
     starttime = []
     endtime = []
@@ -238,7 +240,7 @@ def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
 
 def prepare_rsam(tr):
     n_samples = int(tr.meta.sampling_rate * 60 * 10)  # Amount to 10 minutes
-    print('Computing RSAM ...')
+    print('Computing RSAM...')
     tr.data = uniform_filter1d(abs(tr.data), size=n_samples)
     df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
     xlabel = "Date"
@@ -259,12 +261,10 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
         greater than 100 times the horizontal resolution of the screen (default 1920), the LTSA is computed. If not, a
         standard spectrogram.
     """
-    print(f'Preparing figure...')
-    print('Updating dates...')
     res = 1920
     num_samples = math.ceil(len(tr.data) / hop_length)
     if num_samples > (res * 100):
-        print('COMPUTATION OF LTSA')
+        print('Computing LTSA...')
         d = seismicLTSA(tr.data, tr.meta.sampling_rate)
         params = {'div_len': int(np.round(len(tr.data) / res)),  # Length in numer of samples
                   'subdiv_len': win_length,
@@ -281,13 +281,14 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
         freqs = np.arange(0, n_fft / 2) * tr.meta.sampling_rate / n_fft
 
     else:
-        print('COMPUTATION OF COMPLETE SPECTROGRAM')
+        print('Computing standard spectrogram...')
         d = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
         S_db = librosa.amplitude_to_db(np.abs(d), ref=1, amin=1e-5, top_db=None)
         frame_indices = np.arange(d.shape[1])
         time_rel = librosa.frames_to_time(frame_indices, sr=tr.meta.sampling_rate, hop_length=hop_length, n_fft=None)
         freqs = np.arange(0, 1 + n_fft / 2) * tr.meta.sampling_rate / n_fft
 
+    print(f'Spectrogram has {len(S_db)} samples...')
     time_abs = list([tr.stats.starttime + time_rel[0]])
     time_abs[0] = tr.stats.starttime + time_rel[0]
     for i in range(1, len(time_rel)):
@@ -403,6 +404,10 @@ def detect_anomalies(stream):
 
 
 def correct_data_anomalies(tr):
+    """
+        Puts to 0 all the samples that have an absolute value greater than 500.000, an inf value or a NaN value.
+    """
+
     # Correction of anomalous values
 
     abs_th = 500000

@@ -205,11 +205,12 @@ def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayo
 
     if ctx.triggered_id == 'kill_button':
         # Close the app
+        print('Closing app...')
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
 
-    if ctx.triggered_id == 'export':
+    elif ctx.triggered_id == 'export':
         if not os.path.exists("./exports"):
             os.mkdir("./exports")
         fig1 = go.Figure(data=fig_1['data'], layout=fig_1['layout'])
@@ -220,7 +221,7 @@ def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayo
         fig2.write_image(file=f"./exports/{file_title}.svg", format="svg", width=1920, height=1080, scale=1)
         print('Export completed.')
 
-    if ctx.triggered_id == 'update':
+    elif ctx.triggered_id == 'update':
         if channel_selector != CHANNEL or geo_sel != GEOPHONE or STARTTIME != start_time or ENDTIME != end_time:  # Read new data only if a parameter is changed
             # Read new data
             CHANNEL = channel_selector
@@ -265,7 +266,7 @@ def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayo
             fig_2['layout']['coloraxis']['cmax'] = s_max
             fig_2['layout']['coloraxis']['cmin'] = s_min
 
-        if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', 'export']:
+        if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin']:
             tr = TR.slice(start_time, end_time)
             fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max, hop_length=hop_length, win_length=win_length,
                                         n_fft=n_fft, window=window)
@@ -277,7 +278,9 @@ def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayo
                 layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
                 fig_1['layout'] = layout
 
-    return fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f")
+    print('Done!')
+    return (fig_1, fig_2, {'autosize': True}, {'autosize': True},
+            start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))
 
 
 # Run the app

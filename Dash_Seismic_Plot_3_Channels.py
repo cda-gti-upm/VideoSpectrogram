@@ -198,6 +198,7 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
 
 
     if ctx.triggered_id == 'kill_button':
+        print('Closing app...')
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
@@ -252,7 +253,7 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
             fig_2['layout'] = layout2
             layout3 = update_layout_3_channels(fig_3, start_time, end_time, min_z, max_z, auto_z)
             fig_3['layout'] = layout3
-
+    print('Done!')
     return (fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True},
             start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S"))
 
