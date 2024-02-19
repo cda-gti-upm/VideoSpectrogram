@@ -285,6 +285,7 @@ def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayo
                 layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
                 fig_1['layout'] = layout
 
+    print('Done!')
     return (fig_1, fig_2, {'autosize': True}, {'autosize': True},
             start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))
 

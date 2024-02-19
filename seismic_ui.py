@@ -7,7 +7,7 @@ print(ascii_banner)
 # Default parameters
 filter_50Hz_f = 'n'
 formato = 'PICKLE'
-location = 'LaPalma'  #  location = 'ElHierro'
+location = 'ElHierro'  #  location = 'ElHierro'
 geo = ''
 vis_type = ''
 while vis_type not in ['1', '2', '3', '4']:
