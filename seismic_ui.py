@@ -18,7 +18,7 @@ while vis_type not in ['1', '2', '3', '4']:
                      'Opción 4: RSAM + espectrograma\n')
 
 while geo not in ['1', '2', '3', '4', '5', '6', '7', '8']:
-    geo = input('Seleccione el número de geófono\n')
+    geo = input('Seleccione el número de geófono:\n')
 geo = 'Geophone' + geo
 channel = ''
 if vis_type in ['1', '3', '4']:
