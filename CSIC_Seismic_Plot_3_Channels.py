@@ -12,7 +12,7 @@ import os
 import signal
 import pyautogui
 import socket
-from seismic_dash_utils import (open_browser, get_3_channel_figures, update_layout_3_channels)
+from CSIC_Seismic_Visualizator_Utils import (open_browser, get_3_channel_figures, update_layout_3_channels)
 import plotly.graph_objs as go
 
 

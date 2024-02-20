@@ -12,7 +12,7 @@ from threading import Timer
 import os
 import signal
 import pyautogui
-from seismic_dash_utils import read_and_preprocessing, open_browser, prepare_spectrogram, prepare_time_plot, update_layout
+from CSIC_Seismic_Visualizator_Utils import read_and_preprocessing, open_browser, prepare_spectrogram, prepare_time_plot, update_layout
 import socket
 import plotly.graph_objs as go
 

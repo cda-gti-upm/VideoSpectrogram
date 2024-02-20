@@ -3,19 +3,16 @@ Plot seismic data: one plot per geophone and channel
 Read datafiles of given locations (geophones) and channels and generate one independent plot for every
 one.
 """
-import math
-import librosa.display
+
 import sys
 from obspy.core import UTCDateTime
 import numpy as np
-import plotly.express as px
 from dash import Dash, dcc, html, Input, Output, ctx, State
-from ltsa.ltsa import seismicLTSA
 from threading import Timer
 import os
 import signal
 import pyautogui
-from seismic_dash_utils import read_and_preprocessing, open_browser, prepare_spectrogram, update_layout, prepare_rsam, max_per_window
+from CSIC_Seismic_Visualizator_Utils import read_and_preprocessing, open_browser, prepare_spectrogram, update_layout, prepare_rsam, max_per_window
 import socket
 import plotly.graph_objs as go
 

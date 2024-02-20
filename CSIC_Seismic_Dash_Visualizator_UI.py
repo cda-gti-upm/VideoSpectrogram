@@ -4,10 +4,14 @@ import subprocess
 
 ascii_banner = pyfiglet.figlet_format("Seismic data visualizator")
 print(ascii_banner)
+
+
 # Default parameters
-filter_50Hz_f = 'n'
+filter_50Hz_f = 's'
 formato = 'PICKLE'
-location = 'ElHierro'  #  location = 'ElHierro'
+location = 'LaPalma'  #  location = 'ElHierro'
+
+
 geo = ''
 vis_type = ''
 while vis_type not in ['1', '2', '3', '4']:
@@ -32,9 +36,9 @@ end = input('Seleccione instante final:  formato yyyy-mm-dd hh:mm:ss o dejar vac
 # formato = input('Formato de los datos: \n')
 
 if vis_type == '1':
-    proc = subprocess.run(['python', 'Dash_Seismic_Plot_RSAM.py', geo, channel, start, end, filter_50Hz_f, formato, location])
+    proc = subprocess.run(['python', 'CSIC_Seismic_Plot_Amplitude_RSAM.py', geo, channel, start, end, filter_50Hz_f, formato, location])
 elif vis_type == '2':
-    proc = subprocess.run(['python', 'Dash_Seismic_Plot_3_Channels.py', geo, start, end, filter_50Hz_f, formato, location])
+    proc = subprocess.run(['python', 'CSIC_Seismic_Plot_3_Channels.py', geo, start, end, filter_50Hz_f, formato, location])
 else:
     win_length = '1024'
     hop_length = '256'
@@ -58,9 +62,9 @@ else:
         S_max = input('S_max: ')
         S_min = input('S_min: ')
     if vis_type == '3':
-        proc = subprocess.run(['python', 'Dash_Seismic_Plot_Spectrogram.py', geo, channel, start, end, filter_50Hz_f, formato, location,
+        proc = subprocess.run(['python', 'CSIC_Seismic_Plot_Amplitude_Spectrogram.py', geo, channel, start, end, filter_50Hz_f, formato, location,
                                win_length, hop_length, n_fft, window, S_max, S_min])
     else:
         proc = subprocess.run(
-            ['python', 'Dash_Seismic_RSAM_Spectrogram.py', geo, channel, start, end, filter_50Hz_f, formato, location,
+            ['python', 'CSIC_Seismic_Plot_RSAM_Spectrogram.py', geo, channel, start, end, filter_50Hz_f, formato, location,
              win_length, hop_length, n_fft, window, S_max, S_min])

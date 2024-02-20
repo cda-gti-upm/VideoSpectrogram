@@ -15,8 +15,8 @@ import signal
 import pyautogui
 import socket
 import plotly.graph_objs as go
-from seismic_dash_utils import (read_and_preprocessing, open_browser, prepare_time_plot,
-                                update_layout, prepare_rsam, update_layout_rsam)
+from CSIC_Seismic_Visualizator_Utils import (read_and_preprocessing, open_browser, prepare_time_plot,
+                                             update_layout, prepare_rsam, update_layout_rsam)
 
 
 # Get arguments
