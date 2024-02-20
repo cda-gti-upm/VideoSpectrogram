@@ -67,25 +67,67 @@ data_format:
   format_in: SEG2        # Format of input datafiles
   format_out: PICKLE  # Format of output datafiles
 ```
-# Data visualization
-Execute from the terminal:`python seismic_ui.py`. Then the following prompt will appear:
+# Data visualization user interface
+Execute from the terminal:`python CSIC_Seismic_Dash_Visualizator_UI.py`. Then the following prompt will appear:
 
-![alt text](https://github.com/EnolAyo/pyRSAM/blob/master/pictures/primera.png)
+![alt text](./screenshots/interface_prompt.png)
 
 You have to write the number corresponding to the option that you want to visualize and then press Enter.
-Then you have to select the number of the geophone (1 to 8), the channel (X, Y, Z), and the earliest and latest time that you want to visualize data from. If you want to visualize all the available data, just press Enter without typing anything when the program asks you for start and end time.
+Then you have to select the number of the geophone (1 to 8), the channel (X, Y, Z) for options 1, 3 and 4, and the earliest and latest time that you want to visualize data from. If you want to visualize all the available data, just press Enter without typing anything when the program asks you for start and end time.
 
-![alt text](https://github.com/EnolAyo/pyRSAM/blob/master/pictures/parametros.png)
 
-If the option 3 is selected (Time plot + Spectrogram), the progream will show some spectrogram-related parameters and its default value and ask you if you wish to modify them. Type 's' and press Enter if you want to modify thoose parameters, or type 'n' to use the default values.
+If the option 3 or 4 are selected (Amplitude/RSAM  + Spectrogram), the progream will show some spectrogram-related parameters and its default value and ask you if you wish to modify them. Type 's' and press Enter if you want to modify thoose parameters, or type 'n' to use the default values.
 
-![alt text](https://github.com/EnolAyo/pyRSAM/blob/master/pictures/parametros_espectrograma.png)
+![alt text](./screenshots/spec_parameters.png)
 
-Then, the program starts to read the data. When it is ready, the browser will automatically be launched.
+Then, if options 1, 3 or 4 are selected, the program starts to read the data. When it is ready, the browser will automatically be launched.
 
-![alt text](https://github.com/EnolAyo/pyRSAM/blob/master/pictures/leyendo.png)
+![alt text](./screenshots/reading_options_1_3_4.png)
 
-# Some considerations
+If option 2 is selected, the program will first check the start and end time of the available data for each channel. If they are different, the program will select the dates interval for which all channels have available data. Then, data will be readed.
+
+![alt text](./screenshots/reading_3_channels.png)
+
+# Options 1, 3 and 4
+
+The operation of theese 3 options is similar:
+
+![alt text](./screenshots/interface_option1.png)
+
+First, we have a geoophone selector, channel selector and start and end dates selector. Theese selectors are used to read new data. If the user wishes to do so, after selecting the parameters, the button 'Read new data' must be pressed.
+
+There is also a button 'Export in SVG'. After pressing it, all the figures on the screen will be exported to the folder (`exports/`) on the project directory.
+
+Then there is the 'Close app' button. It is recommended to pressed it for ending the session. If the user just closses the browser, the program will still be running, so in order to close it Ctrl + C must be typed on the Pycharm terminal.
+
+Finally, we find the amplitude selectors for both plots. If the 'autorange' option is marked, the maximum aplitude value displayed in the amplitude plot will be 100,000. (This does not apply for RSAM). The user may disable this option and select manually the desired amplitude range for both figures.
+
+Visualization options 3 and 4 have some additional selectors related to the spectrogram:
+
+![alt text](./screenshots/spec_interface.png)
+
+The frequency range selectors is meant to select the displayed frequencies, which by default starts as 5 Hz, as the geophones are not able to capture information for lower frequencies. The Spectrogream power range selector modifies the color legend range of the spectrogram. However, we can check the actual value of one point by placing the mouse over it.
+
+
+
+Additionally, it must be said that for options 1, 3 and 4 there is the possibility of zooming manually over the figure. After zooming, the program will compute a more precise representation for the selected area, and all figures will be synchronized. This may take a time, primaraly if there is a spectrogram involved. If the user wants to bring back the original representation, the 'Autoscale' button, present on every figure, must be pressed.
+
+![alt text](./screenshots/autoscale.png)
+
+
+
+
+# Option 2.
+
+If the user selects this option, the program will display the 3 channels of a single geophone:
+
+![alt text](./screenshots/3_channels_interface.png)
+
+The operation of this program is the same that for the others but for one difference. As we have information of 3 channels, there is a lot of information to be stored. Therefore, after zooming on one figure, the program will not recompute automatically the plot for that area. The zoom of the 3 figures will still be synchronized, but after each zoom resolution will be lost. The user may press the 'Read new data' button after the zoom to get a more precise representation. However, this will take a considerable amount of time, as the information from the geophones must be readed again.
+
+
+
+
 It is recommended not to touch any input of the program when in the tab name appears 'Updating...'. Wait until it disappears before changing any parameter, specially when you change the geophone number.
 
 ![alt text](https://github.com/EnolAyo/pyRSAM/blob/master/pictures/update.png)
