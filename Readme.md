@@ -127,11 +127,8 @@ The operation of this program is the same that for the others but for one differ
 
 
 
+#  Some considerations
 
-It is recommended not to touch any input of the program when in the tab name appears 'Updating...'. Wait until it disappears before changing any parameter, specially when you change the geophone number.
+It is recommended not to touch any input of the program when in the tab name appears 'Updating...', unless you press the 'Close app' button. Wait until it disappears before changing any parameter, specially after pressing the button 'Read new data'. The reading of new data may be interrupted and the representation lost, so it would be necessary to refresh the page and read again.
 
-![alt text](https://github.com/EnolAyo/pyRSAM/blob/master/pictures/update.png)
-
-Finally, when you desire to close the program, press the button 'Close app'. If you do not do that and instead just close the browser, the program will still be running and you will have to kill it from the terminal.
-
-![alt text](https://github.com/EnolAyo/pyRSAM/blob/master/pictures/cerrar.png)
+![alt text](./screenshots/updating.png)
