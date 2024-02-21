@@ -78,21 +78,29 @@ Then you have to select the number of the geophone (1 to 8), the channel (X, Y, 
 
 If the option 3 or 4 are selected (Amplitude/RSAM  + Spectrogram), the progream will show some spectrogram-related parameters and its default value and ask you if you wish to modify them. Type 's' and press Enter if you want to modify thoose parameters, or type 'n' to use the default values.
 
+
 ![alt text](./screenshots/spec_parameters.png)
+
 
 Then, if options 1, 3 or 4 are selected, the program starts to read the data. When it is ready, the browser will automatically be launched.
 
+
 ![alt text](./screenshots/reading_options_1_3_4.png)
+
 
 If option 2 is selected, the program will first check the start and end time of the available data for each channel. If they are different, the program will select the dates interval for which all channels have available data. Then, data will be readed.
 
+
 ![alt text](./screenshots/reading_3_channels.png)
+
+
 
 # Options 1, 3 and 4
 
 The operation of theese 3 options is similar:
 
 ![alt text](./screenshots/interface_option1.png)
+
 
 First, we have a geoophone selector, channel selector and start and end dates selector. Theese selectors are used to read new data. If the user wishes to do so, after selecting the parameters, the button 'Read new data' must be pressed.
 
@@ -103,6 +111,8 @@ Then there is the 'Close app' button. It is recommended to pressed it for ending
 Finally, we find the amplitude selectors for both plots. If the 'autorange' option is marked, the maximum aplitude value displayed in the amplitude plot will be 100,000. (This does not apply for RSAM). The user may disable this option and select manually the desired amplitude range for both figures.
 
 Visualization options 3 and 4 have some additional selectors related to the spectrogram:
+
+
 
 ![alt text](./screenshots/spec_interface.png)
 
