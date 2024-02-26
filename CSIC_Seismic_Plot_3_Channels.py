@@ -34,15 +34,23 @@ del sock
 styles = {'pre': {'border': 'thin lightgrey solid', 'overflowX': 'scroll'}}
 path_root = f'./data/CSIC_{location}'
 
-if start:
-    STARTTIME = UTCDateTime(start)
-else:
-    STARTTIME = None
+try:
+    if start:
+        STARTTIME = UTCDateTime(start, iso8601=True)
+    else:
+        STARTTIME = None
 
-if end:
-    ENDTIME = UTCDateTime(end)
-else:
-    ENDTIME = None
+    if end:
+        ENDTIME = UTCDateTime(end)
+    else:
+        ENDTIME = None
+except Exception as e:
+    print("Date is not valid. (%s: %s)" % (type(e).__name__, e))
+    sys.exit()
+if (STARTTIME is not None) and (ENDTIME is not None):
+    if STARTTIME > ENDTIME:
+        print('Start time is after end time.')
+        sys.exit()
 
 if filt_50Hz == 's':
     filter_50Hz_f = True

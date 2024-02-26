@@ -1,4 +1,6 @@
 import os
+import sys
+
 from obspy.core import UTCDateTime
 import obspy.signal.filter
 import webbrowser
@@ -56,6 +58,8 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
             except Exception as e:
                 if verbose:
                     print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
+                    print('There may be a problem with the PICKLE file')
+                    sys.exit()
     return st
 def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
     """
@@ -105,12 +109,17 @@ def get_start_end_time(path, format='PICKLE'):
     dirlist = sorted(os.listdir(path))
     starttime = []
     endtime = []
-    for file in tqdm(dirlist):
-        file = os.path.join(path, file)
-        st_head = obspy.read(file, format=format, headonly=True)
-        starttime.append(st_head[0].stats.starttime)
-        endtime.append(st_head[0].stats.endtime)
 
+    for file in tqdm(dirlist):
+        try:
+            file = os.path.join(path, file)
+            st_head = obspy.read(file, format=format, headonly=True)
+            starttime.append(st_head[0].stats.starttime)
+            endtime.append(st_head[0].stats.endtime)
+        except Exception as e:
+            print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
+            print('There may be a problem with the PICKLE file')
+            sys.exit()
     return min(starttime), max(endtime)
 
 

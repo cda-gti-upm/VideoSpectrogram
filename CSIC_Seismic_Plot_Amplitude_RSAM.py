@@ -38,14 +38,23 @@ port = sock.getsockname()[1]
 del sock
 
 
-if start:
-    STARTTIME = UTCDateTime(start)
-else:
-    STARTTIME = None
-if end:
-    ENDTIME = UTCDateTime(end)
-else:
-    ENDTIME = None
+try:
+    if start:
+        STARTTIME = UTCDateTime(start, iso8601=True)
+    else:
+        STARTTIME = None
+
+    if end:
+        ENDTIME = UTCDateTime(end)
+    else:
+        ENDTIME = None
+except Exception as e:
+    print("Date is not valid. (%s: %s)" % (type(e).__name__, e))
+    sys.exit()
+if (STARTTIME is not None) and (ENDTIME is not None):
+    if STARTTIME > ENDTIME:
+        print('Start time is after end time.')
+        sys.exit()
 
 if filt_50Hz == 's':
     filter_50Hz_f = True
@@ -149,8 +158,8 @@ app.layout = html.Div([
     Output('enddate', 'value'),
     State('geophone_selector', 'value'),
     State('channel_selector', 'value'),
-    State('startdate', 'value'),
-    State('enddate', 'value'),
+    Input('startdate', 'value'),
+    Input('enddate', 'value'),
     Input('time_plot', 'relayoutData'),
     Input('RSAM', 'relayoutData'),
     Input('max', 'value'),
@@ -195,7 +204,7 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutd
 
     if ctx.triggered_id == 'update':
         # Read new data
-        print(f'{channel_selector}, {CHANNEL}, {geo_sel}, {GEOPHONE}, {STARTTIME}, {start_time}, {ENDTIME}, {end_time}')
+
         if channel_selector != CHANNEL or geo_sel != GEOPHONE or STARTTIME != start_time or ENDTIME != end_time:  #  Read new data only if a parameter is changed
             length = len(TR)
             TR.data = np.zeros(length)

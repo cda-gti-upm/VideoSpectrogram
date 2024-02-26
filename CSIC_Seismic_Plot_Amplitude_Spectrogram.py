@@ -44,15 +44,23 @@ del sock
 
 oversampling_factor = 25  # The higher, the more samples in the amplitude figure
 
-if start:
-    STARTTIME = UTCDateTime(start)
-else:
-    STARTTIME = None
-if end:
-    ENDTIME = UTCDateTime(end)
-else:
-    ENDTIME = None
+try:
+    if start:
+        STARTTIME = UTCDateTime(start, iso8601=True)
+    else:
+        STARTTIME = None
 
+    if end:
+        ENDTIME = UTCDateTime(end)
+    else:
+        ENDTIME = None
+except Exception as e:
+    print("Date is not valid. (%s: %s)" % (type(e).__name__, e))
+    sys.exit()
+if (STARTTIME is not None) and (ENDTIME is not None):
+    if STARTTIME > ENDTIME:
+        print('Start time is after end time.')
+        sys.exit()
 
 if filt_50Hz == 's':
     filter_50Hz_f = True
