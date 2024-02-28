@@ -15,6 +15,7 @@ import pyautogui
 from CSIC_Seismic_Visualizator_Utils import read_and_preprocessing, open_browser, prepare_spectrogram, update_layout, prepare_rsam, max_per_window
 import socket
 import plotly.graph_objs as go
+import obspy.signal.filter
 
 
 # Get arguments
@@ -39,7 +40,7 @@ sock.bind(('', 0))
 port = sock.getsockname()[1]
 del sock
 
-oversampling_factor = 25  # The higher, the more samples in the amplitude figure
+oversampling_factor = 3  # The higher, the more samples in the amplitude figure
 
 try:
     if start:
@@ -76,7 +77,7 @@ ENDTIME = TR.stats.endtime
 
 # Creating app layout:
 
-app = Dash(__name__)
+app = Dash(__name__, title='Option 1')
 app.layout = html.Div([
     dcc.Dropdown(
         ['Geophone1', 'Geophone2', 'Geophone3', 'Geophone4', 'Geophone5', 'Geophone6', 'Geophone7', 'Geophone8'],
@@ -198,15 +199,26 @@ app.layout = html.Div([
     State('time_plot', 'figure'),
     State('spectrogram', 'figure')
 )
-def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayoutdata_2, max_y, min_y, max_freq,
+def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, max_y, min_y, max_freq,
            min_freq, auto_y, button, esport_button, update, s_min, s_max, fig_1, fig_2):
     global TR
     global CHANNEL
     global GEOPHONE
     global STARTTIME
     global ENDTIME
-    start_time = UTCDateTime(startdate)
-    end_time = UTCDateTime(enddate)
+    dates_error = False
+    try:
+        start_time = UTCDateTime(starttime_app)
+        end_time = UTCDateTime(endtime_app)
+    except Exception as e_dates:
+        start_time = STARTTIME
+        end_time = ENDTIME
+        dates_error = True
+        print(f'Dates are wrong: {e_dates}')
+    if start_time > end_time:
+        start_time = STARTTIME
+        end_time = ENDTIME
+        print('No valid dates')
     if ctx.triggered_id == 'kill_button':
         # Close the app
         print('Closing app...')
@@ -235,61 +247,59 @@ def update(geo_sel, channel_selector, startdate, enddate, relayoutdata_1, relayo
             TR.data = np.zeros(len(TR))
             path = path_root + '_' + geo_sel + '_' + channel_selector
             TR = read_and_preprocessing(path, format_in, start_time, end_time, filter_50Hz_f)
-            tr = TR.slice(start_time, end_time)
-            fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max, hop_length=hop_length, win_length=win_length, n_fft=n_fft, window=window)
-            num_samples = len(tr)
-            target_num_samples = 1920
-            factor = int(num_samples / (target_num_samples * oversampling_factor))
-            max_per_window(tr, factor)
-            fig_1 = prepare_rsam(tr)
-            fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
-            start_time = TR.stats.starttime
-            end_time = TR.stats.endtime
-            if len(tr) != 0:
-                layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
-                fig_1['layout'] = layout
+
+    if ctx.triggered_id == 'time_plot':
+        if "xaxis.range[0]" in relayoutdata_1:
+            # Get start and end time the user selected on the amplitude plot
+            start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+        else:
+            start_time = STARTTIME
+            end_time = ENDTIME
+
+    if ctx.triggered_id == 'spectrogram':
+        if "xaxis.range[0]" in relayoutdata_2:
+            # Get start and end time the user selected on the spectrogram
+            start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
+        else:
+            start_time = STARTTIME
+            end_time = ENDTIME
 
 
-    else:
-        if ctx.triggered_id == 'time_plot':
-            if "xaxis.range[0]" in relayoutdata_1:
-                # Get start and end time the user selected on the amplitude plot
-                start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
-                end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+    if ctx.triggered_id in ['max', 'min', 'auto']:
+        # Manage amplitude axis of the amplitude plot
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
+        fig_1['layout'] = layout
+    elif ctx.triggered_id in ['max_freq', 'min_freq']:
+        # Maximum and minimum displayed frequencies
+        fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
+    elif ctx.triggered_id in ['Smax', 'Smin']:
+        # Maximum and minimum displayed spectrogram power values
+        fig_2['layout']['coloraxis']['cmax'] = s_max
+        fig_2['layout']['coloraxis']['cmin'] = s_min
 
-        if ctx.triggered_id == 'spectrogram':
-            if "xaxis.range[0]" in relayoutdata_2:
-                # Get start and end time the user selected on the spectrogram
-                start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
-                end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
-
+    if ctx.triggered_id not in ['max', 'min', 'auto', 'Smax', 'Smin', 'export']:
         tr = TR.slice(start_time, end_time)
+        fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max, hop_length=hop_length, win_length=win_length, n_fft=n_fft, window=window)
+        try:
+            tr.data = obspy.signal.filter.bandpass(tr.data, min_freq+0.1, max_freq-0.1, tr.meta.sampling_rate, corners=8,
+                                                   zerophase=True)
+        except Exception as e_filt:
+            print(f'Error when filtering the signal: {e_filt}')
+            sys.exit()
 
-        if ctx.triggered_id in ['max', 'min', 'auto']:
-            # Manage amplitude axis of the amplitude plot
+        num_samples = len(tr)
+        target_num_samples = 1920
+        factor = int(num_samples / (target_num_samples * oversampling_factor))
+        max_per_window(tr, factor)
+        fig_1 = prepare_rsam(tr)
+        fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
+        start_time = TR.stats.starttime
+        end_time = TR.stats.endtime
+        if len(tr) != 0:
             layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
             fig_1['layout'] = layout
-        elif ctx.triggered_id in ['max_freq', 'min_freq']:
-            # Maximum and minimum displayed frequencies
-            fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
-        elif ctx.triggered_id in ['Smax', 'Smin']:
-            # Maximum and minimum displayed spectrogram power values
-            fig_2['layout']['coloraxis']['cmax'] = s_max
-            fig_2['layout']['coloraxis']['cmin'] = s_min
-
-        if ctx.triggered_id not in ['max', 'min', 'auto', 'max_freq', 'min_freq', 'Smax', 'Smin', 'export']:
-            fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max, hop_length=hop_length, win_length=win_length, n_fft=n_fft, window=window)
-            num_samples = len(tr)
-            target_num_samples = 1920
-            factor = int(num_samples / (target_num_samples * oversampling_factor))
-            max_per_window(tr, factor)
-            fig_1 = prepare_rsam(tr)
-            fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
-            start_time = TR.stats.starttime
-            end_time = TR.stats.endtime
-            if len(tr) != 0:
-                layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
-                fig_1['layout'] = layout
 
     print('Done!')
     return (fig_1, fig_2, {'autosize': True}, {'autosize': True},

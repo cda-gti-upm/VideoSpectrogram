@@ -25,7 +25,7 @@ filt_50Hz = args[4]
 format_in = args[5]
 location = args[6]
 
-oversampling_factor = 40
+oversampling_factor = 20
 sock = socket.socket()
 sock.bind(('', 0))
 port = sock.getsockname()[1]
@@ -63,7 +63,7 @@ else:
 
 # Creating app layout:
 
-app = Dash(__name__)
+app = Dash(__name__, title='Option 2')
 app.layout = html.Div([
     dcc.Dropdown(['Geophone1', 'Geophone2', 'Geophone3', 'Geophone4',
                   'Geophone5', 'Geophone6', 'Geophone7', 'Geophone8'], id='geophone_selector', value=GEOPHONE),
@@ -155,8 +155,8 @@ app.layout = html.Div([
     Output('startdate', 'value'),
     Output('enddate', 'value'),
     State('geophone_selector', 'value'),
-    State('startdate', 'value'),
-    State('enddate', 'value'),
+    Input('startdate', 'value'),
+    Input('enddate', 'value'),
     Input('x_plot', 'relayoutData'),
     Input('y_plot', 'relayoutData'),
     Input('z_plot', 'relayoutData'),
@@ -179,8 +179,18 @@ app.layout = html.Div([
 def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
                 min_y, max_z, min_z, auto_x, auto_y, auto_z, button, update, export_button, fig_1, fig_2, fig_3):
 
-    start_time = UTCDateTime(starttime_app)
-    end_time = UTCDateTime(endtime_app)
+    try:
+        start_time = UTCDateTime(starttime_app)
+        end_time = UTCDateTime(endtime_app)
+    except Exception as e_dates:
+        start_time = UTCDateTime(fig_1['data'][0]['x'][0])
+        end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
+        print(f'Dates are wrong: {e_dates}')
+    if start_time > end_time:
+        start_time = UTCDateTime(fig_1['data'][0]['x'][0])
+        end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
+        print('No valid dates')
+
     if ctx.triggered_id == 'export':
         if not os.path.exists("./exports"):
             os.mkdir("./exports")
@@ -254,18 +264,30 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
             fig_2['layout']['xaxis']['autorange'] = True
             fig_3['layout']['xaxis']['autorange'] = True
 
-        if ctx.triggered_id != 'export':
-            layout1 = update_layout_3_channels(fig_1, start_time, end_time, min_x, max_x, auto_x)
-            fig_1['layout'] = layout1
-            layout2 = update_layout_3_channels(fig_2, start_time, end_time, min_y, max_y, auto_y)
-            fig_2['layout'] = layout2
-            layout3 = update_layout_3_channels(fig_3, start_time, end_time, min_z, max_z, auto_z)
-            fig_3['layout'] = layout3
+    elif ctx.triggered_id in ['startdate', 'enddate']:
+
+        fig_1['layout']['xaxis']['autorange'] = False
+        fig_1['layout']['xaxis']['range'] = [start_time, end_time]
+        fig_2['layout']['xaxis']['autorange'] = False
+        fig_2['layout']['xaxis']['range'] = [start_time, end_time]
+        fig_3['layout']['xaxis']['autorange'] = False
+        fig_3['layout']['xaxis']['range'] = [start_time, end_time]
+
+    if ctx.triggered_id not in ['update', 'export']:
+        layout1 = update_layout_3_channels(fig_1, start_time, end_time, min_x, max_x, auto_x)
+        fig_1['layout'] = layout1
+        layout2 = update_layout_3_channels(fig_2, start_time, end_time, min_y, max_y, auto_y)
+        fig_2['layout'] = layout2
+        layout3 = update_layout_3_channels(fig_3, start_time, end_time, min_z, max_z, auto_z)
+        fig_3['layout'] = layout3
+
+
+
     print('Done!')
     return (fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True},
             start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S"))
 
 
  # Run the app
-Timer(5, open_browser, args=(port,)).start()
+Timer(1, open_browser, args=(port,)).start()
 app.run_server(debug=False, port=port)

@@ -306,6 +306,14 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
     fig = px.imshow(S_db, x=time_abs, y=freqs, origin='lower',
                     labels={'y': 'Frequency (Hz)', 'color': 'Power (dB)'},
                     color_continuous_scale='jet', zmin=s_min, zmax=s_max)
+
+    #fig.layout.coloraxis.showscale = False
+    fig.layout['coloraxis']['colorbar']['orientation'] = 'h'
+    """
+    fig.layout['coloraxis']['colorbar']['x'] = 0.5
+    fig.layout['coloraxis']['colorbar']['y'] = -0.5
+    """
+    fig.show()
     fig['layout']['yaxis']['autorange'] = False
     fig['layout']['yaxis']['range'] = [5, 125]
     fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}

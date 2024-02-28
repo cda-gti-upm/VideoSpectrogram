@@ -29,7 +29,7 @@ filt_50Hz = args[5]
 format_in = args[6]
 location = args[7]
 
-oversampling_factor = 25  # A higher value gives more samples to the plot
+oversampling_factor = 2  # A higher value gives more samples to the plot
 
 # Get a free random port
 sock = socket.socket()
@@ -71,7 +71,7 @@ STARTTIME = TR.stats.starttime
 ENDTIME = TR.stats.endtime
 
 # Creating app layout:
-app = Dash(__name__)
+app = Dash(__name__, title='Option 3')
 app.layout = html.Div([
     dcc.Dropdown(['Geophone1', 'Geophone2', 'Geophone3', 'Geophone4', 'Geophone5', 'Geophone6', 'Geophone7',
                   'Geophone8'], id='geophone_selector', value=GEOPHONE),
@@ -181,8 +181,19 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutd
     global GEOPHONE
     global STARTTIME
     global ENDTIME
-    start_time = UTCDateTime(starttime_app)
-    end_time = UTCDateTime(endtime_app)
+    dates_error = False
+    try:
+        start_time = UTCDateTime(starttime_app)
+        end_time = UTCDateTime(endtime_app)
+    except Exception as e_dates:
+        start_time = STARTTIME
+        end_time = ENDTIME
+        dates_error = True
+        print(f'Dates are wrong: {e_dates}')
+    if start_time > end_time:
+        start_time = STARTTIME
+        end_time = ENDTIME
+        print('No valid dates')
 
     if ctx.triggered_id == 'kill_button':
         # Close the app
@@ -204,7 +215,6 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutd
 
     if ctx.triggered_id == 'update':
         # Read new data
-
         if channel_selector != CHANNEL or geo_sel != GEOPHONE or STARTTIME != start_time or ENDTIME != end_time:  #  Read new data only if a parameter is changed
             length = len(TR)
             TR.data = np.zeros(length)
@@ -214,58 +224,50 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutd
             GEOPHONE = geo_sel
             STARTTIME = start_time
             ENDTIME = end_time
-            tr = TR.slice(start_time, end_time)
-            fig_1 = prepare_time_plot(tr, oversampling_factor)
-            fig_2 = prepare_rsam(tr)
-            start_time = TR.stats.starttime
-            end_time = TR.stats.endtime
-            if len(tr) != 0:
-                layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
-                fig_1['layout'] = layout
-                layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
-                fig_2['layout'] = layout_rsam
 
-    else:
+    if ctx.triggered_id == 'time_plot':
+        if "xaxis.range[0]" in relayoutdata_1:
+            # Get start and end time the user selected on the amplitude plot
+            start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+        else:
+            start_time = STARTTIME
+            end_time = ENDTIME
 
-        if ctx.triggered_id == 'time_plot':
-            if "xaxis.range[0]" in relayoutdata_1:
-                # Get start and end time the user selected on the amplitude plot
-                start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
-                end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
+    elif ctx.triggered_id == 'RSAM':
+        if "xaxis.range[0]" in relayoutdata_2:
+            # Get start and end time the user selected on the RSAM plot
+            start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
+            end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
+        else:
+            start_time = STARTTIME
+            end_time = ENDTIME
 
-        elif ctx.triggered_id == 'RSAM':
-            if "xaxis.range[0]" in relayoutdata_2:
-                # Get start and end time the user selected on the RSAM plot
-                start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
-                end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
+    if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
+        # Management of the amplitude ranges
+        layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
+        fig_1['layout'] = layout
+        layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
+        fig_2['layout'] = layout_rsam
 
-
-        if ctx.triggered_id in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM']:
-            # Management of the amplitude ranges
+    if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM', 'export'] and not dates_error:
+        # Computation of the new trace and figures
+        tr = TR.slice(start_time, end_time)
+        fig_1 = prepare_time_plot(tr, oversampling_factor)
+        fig_2 = prepare_rsam(tr)
+        if len(tr) != 0:
             layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
             fig_1['layout'] = layout
             layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
             fig_2['layout'] = layout_rsam
 
-        if ctx.triggered_id not in ['max', 'min', 'max_RSAM', 'min_RSAM', 'auto', 'auto_RSAM', 'export']:
-            # Computation of the new trace and figures
-            tr = TR.slice(start_time, end_time)
-            fig_1 = prepare_time_plot(tr, oversampling_factor)
-            fig_2 = prepare_rsam(tr)
-            if len(tr) != 0:
-                layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
-                fig_1['layout'] = layout
-                layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
-                fig_2['layout'] = layout_rsam
-            start_time = TR.stats.starttime
-            end_time = TR.stats.endtime
     print('Done!')
     return (fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S.%f"),
             end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))
 
 
 # Run the app
-Timer(5, open_browser, args=(port,)).start()
+Timer(1, open_browser, args=(port,)).start()
 app.run_server(debug=False, port=port)
 
 
