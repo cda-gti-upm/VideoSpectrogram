@@ -308,7 +308,9 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
                     color_continuous_scale='jet', zmin=s_min, zmax=s_max)
 
     #fig.layout.coloraxis.showscale = False
-    fig.layout['coloraxis']['colorbar']['orientation'] = 'h'
+    fig.layout['colorbar']['orientation'] = 'h'
+    fig.layout['colorbar']['yref'] = 'container'
+    fig.layout['colorbar']['y'] = 0.15
     """
     fig.layout['coloraxis']['colorbar']['x'] = 0.5
     fig.layout['coloraxis']['colorbar']['y'] = -0.5

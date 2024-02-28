@@ -169,8 +169,8 @@ app.layout = html.Div([
             style={'display': 'in-line-block'})],
         style={'display': 'flex'}),
 
-    dcc.Graph(id='time_plot', figure=go.Figure(), style={'width': '164.5vh', 'height': '30vh'}, relayoutData={'autosize': True}),
-    dcc.Graph(id='spectrogram', figure=go.Figure(), style={'width': '170vh', 'height': '50vh'}, relayoutData={'autosize': True})
+    dcc.Graph(id='time_plot', figure=go.Figure(), style={'width': '170vh', 'height': '30vh'}, relayoutData={'autosize': True}),
+    dcc.Graph(id='spectrogram', figure=go.Figure(), style={'width': '170vh', 'height': '53vh'}, relayoutData={'autosize': True})
 ])
 
 
