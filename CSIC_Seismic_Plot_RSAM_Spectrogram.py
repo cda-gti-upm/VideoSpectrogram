@@ -40,7 +40,7 @@ sock.bind(('', 0))
 port = sock.getsockname()[1]
 del sock
 
-oversampling_factor = 3  # The higher, the more samples in the amplitude figure
+oversampling_factor = 2  # The higher, the more samples in the amplitude figure
 
 try:
     if start:
@@ -169,7 +169,7 @@ app.layout = html.Div([
         style={'display': 'flex'}),
 
     dcc.Graph(id='time_plot', figure=go.Figure(), style={'width': '170vh', 'height': '30vh'}, relayoutData={'autosize': True}),
-    dcc.Graph(id='spectrogram', figure=go.Figure(), style={'width': '170vh', 'height': '53vh'}, relayoutData={'autosize': True})
+    dcc.Graph(id='spectrogram', figure=go.Figure(), style={'width': '170vh', 'height': '60vh'}, relayoutData={'autosize': True})
 ])
 
 
@@ -279,12 +279,14 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1
         fig_2['layout']['coloraxis']['cmax'] = s_max
         fig_2['layout']['coloraxis']['cmin'] = s_min
 
-    if ctx.triggered_id not in ['max', 'min', 'auto', 'Smax', 'Smin', 'export']:
+    if ctx.triggered_id not in ['max', 'min', 'auto', 'Smax', 'Smin', 'export', 'max_freq', 'min_freq']:
         tr = TR.slice(start_time, end_time)
         fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max, hop_length=hop_length, win_length=win_length, n_fft=n_fft, window=window)
         try:
+            """
             tr.data = obspy.signal.filter.bandpass(tr.data, min_freq+0.1, max_freq-0.1, tr.meta.sampling_rate, corners=8,
                                                    zerophase=True)
+                                                   """
         except Exception as e_filt:
             print(f'Error when filtering the signal: {e_filt}')
             sys.exit()

@@ -42,7 +42,7 @@ sock.bind(('', 0))
 port = sock.getsockname()[1]
 del sock
 
-oversampling_factor = 3  # The higher, the more samples in the amplitude figure
+oversampling_factor = 2  # The higher, the more samples in the amplitude figure
 
 try:
     if start:
@@ -170,7 +170,7 @@ app.layout = html.Div([
         style={'display': 'flex'}),
 
     dcc.Graph(id='time_plot', figure=go.Figure(), style={'width': '170vh', 'height': '30vh'}, relayoutData={'autosize': True}),
-    dcc.Graph(id='spectrogram', figure=go.Figure(), style={'width': '170vh', 'height': '53vh'}, relayoutData={'autosize': True})
+    dcc.Graph(id='spectrogram', figure=go.Figure(), style={'width': '170vh', 'height': '60vh'}, relayoutData={'autosize': True})
 ])
 
 

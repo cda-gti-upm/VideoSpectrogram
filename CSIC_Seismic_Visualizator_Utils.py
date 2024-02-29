@@ -44,7 +44,7 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
                     if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime) or (starttime >= st_head[0].stats.starttime and endtime <= st_head[0].stats.endtime):
                         st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
                         if filter_50Hz_f:
-                            st[0].data = obspy.signal.filter.bandstop(st[0].data, 49, 51, st[0].meta.sampling_rate, corners=8,
+                            st[0].data = obspy.signal.filter.bandstop(st[0].data, 49.8, 50.2, st[0].meta.sampling_rate, corners=8,
                                                       zerophase=True)
                         first_file = False
                 else:
@@ -52,7 +52,7 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
                     if (starttime <= st_head[0].stats.starttime <= endtime) or (starttime <= st_head[0].stats.endtime <= endtime) or (starttime >= st_head[0].stats.starttime and endtime <= st_head[0].stats.endtime):
                         new_st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
                         if filter_50Hz_f:
-                            new_st[0].data = obspy.signal.filter.bandstop(new_st[0].data, 49, 51, new_st[0].meta.sampling_rate, corners=8,
+                            new_st[0].data = obspy.signal.filter.bandstop(new_st[0].data, 49.8, 50.2, new_st[0].meta.sampling_rate, corners=8,
                                                       zerophase=True)
                         st += new_st
             except Exception as e:
@@ -272,7 +272,7 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
     """
     res = 1920
     num_samples = math.ceil(len(tr.data) / hop_length)
-    if num_samples > (res * 100):
+    if num_samples > (res * 10):
         print('Computing LTSA...')
         d = seismicLTSA(tr.data, tr.meta.sampling_rate)
         params = {'div_len': int(np.round(len(tr.data) / res)),  # Length in numer of samples
@@ -284,6 +284,7 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
         # compute the LTSA -- identical to s.compute()
         d.compute(ref=1, amin=1e-5, top_db=None)
         S_db = d.ltsa
+        print(S_db.shape[1])
         frame_indices = np.arange(S_db.shape[1])
         time_rel = (np.asanyarray(frame_indices) * d.div_len + (d.div_len / 2)).astype(int) / float(
             tr.meta.sampling_rate)
@@ -292,10 +293,12 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
     else:
         print('Computing standard spectrogram...')
         d = librosa.stft(tr.data, hop_length=hop_length, n_fft=n_fft, win_length=win_length, window=window, center=True)
+
         S_db = librosa.amplitude_to_db(np.abs(d), ref=1, amin=1e-5, top_db=None)
         frame_indices = np.arange(d.shape[1])
         time_rel = librosa.frames_to_time(frame_indices, sr=tr.meta.sampling_rate, hop_length=hop_length, n_fft=None)
         freqs = np.arange(0, 1 + n_fft / 2) * tr.meta.sampling_rate / n_fft
+        print(S_db)
 
     print(f'Spectrogram has {len(S_db)} samples...')
     time_abs = list([tr.stats.starttime + time_rel[0]])
@@ -308,14 +311,11 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
                     color_continuous_scale='jet', zmin=s_min, zmax=s_max)
 
     #fig.layout.coloraxis.showscale = False
-    fig.layout['colorbar']['orientation'] = 'h'
-    fig.layout['colorbar']['yref'] = 'container'
-    fig.layout['colorbar']['y'] = 0.15
-    """
-    fig.layout['coloraxis']['colorbar']['x'] = 0.5
-    fig.layout['coloraxis']['colorbar']['y'] = -0.5
-    """
+    fig.layout['coloraxis']['colorbar']['orientation'] = 'h'
+    fig.layout['coloraxis']['colorbar']['yanchor'] = 'bottom'
+    fig.layout['coloraxis']['colorbar']['y'] = -0.25
     fig.show()
+    #sys.exit()
     fig['layout']['yaxis']['autorange'] = False
     fig['layout']['yaxis']['range'] = [5, 125]
     fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
