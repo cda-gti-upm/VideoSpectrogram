@@ -110,7 +110,7 @@ app.layout = html.Div([
              debounce=True,
              style={'display': 'inline-block'}),
          '  ',
-         html.Button('Read new data', id='update', n_clicks=0),
+         html.Button('Update data', id='update', n_clicks=0),
          '  ',
          html.Button('Export in SVG', id='export', n_clicks=0),
          '  ',
@@ -168,8 +168,8 @@ app.layout = html.Div([
             style={'display': 'in-line-block'})],
         style={'display': 'flex'}),
 
-    dcc.Graph(id='time_plot', figure=go.Figure(), style={'width': '170vh', 'height': '30vh'}, relayoutData={'autosize': True}),
-    dcc.Graph(id='spectrogram', figure=go.Figure(), style={'width': '170vh', 'height': '60vh'}, relayoutData={'autosize': True})
+    dcc.Graph(id='time_plot', figure=go.Figure(), style={'width': '170vh', 'height': '30vh'}, relayoutData={'autosize': True}, config={'modeBarButtonsToRemove': ['pan2d', 'autoScale2d']}),
+    dcc.Graph(id='spectrogram', figure=go.Figure(), style={'width': '170vh', 'height': '60vh'}, relayoutData={'autosize': True}, config={'modeBarButtonsToRemove': ['pan2d', 'autoScale2d']})
 ])
 
 
@@ -182,8 +182,8 @@ app.layout = html.Div([
     Output('enddate', 'value'),
     State('geophone_selector', 'value'),
     State('channel_selector', 'value'),
-    Input('startdate', 'value'),
-    Input('enddate', 'value'),
+    State('startdate', 'value'),
+    State('enddate', 'value'),
     Input('time_plot', 'relayoutData'),
     Input('spectrogram', 'relayoutData'),
     Input('max', 'value'),
@@ -207,17 +207,18 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1
     global STARTTIME
     global ENDTIME
     dates_error = False
+    compute_graph = True if ctx.triggered_id is None else False
     try:
         start_time = UTCDateTime(starttime_app)
         end_time = UTCDateTime(endtime_app)
     except Exception as e_dates:
-        start_time = STARTTIME
-        end_time = ENDTIME
+        start_time = fig_1['data'][0]['x'][0]
+        end_time = fig_1['data'][0]['x'][-1]
         dates_error = True
         print(f'Dates are wrong: {e_dates}')
     if start_time > end_time:
-        start_time = STARTTIME
-        end_time = ENDTIME
+        start_time = fig_1['data'][0]['x'][0]
+        end_time = fig_1['data'][0]['x'][-1]
         print('No valid dates')
     if ctx.triggered_id == 'kill_button':
         # Close the app
@@ -238,7 +239,7 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1
         print('Export completed.')
 
     elif ctx.triggered_id == 'update':
-        if channel_selector != CHANNEL or geo_sel != GEOPHONE or STARTTIME != start_time or ENDTIME != end_time:  # Read new data only if a parameter is changed
+        if channel_selector != CHANNEL or geo_sel != GEOPHONE or start_time < STARTTIME or end_time > ENDTIME:  # Read new data only if a parameter is changed
             # Read new data
             CHANNEL = channel_selector
             GEOPHONE = geo_sel
@@ -247,8 +248,12 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1
             TR.data = np.zeros(len(TR))
             path = path_root + '_' + geo_sel + '_' + channel_selector
             TR = read_and_preprocessing(path, format_in, start_time, end_time, filter_50Hz_f)
+            compute_graph = True
+        elif start_time != fig_1['data'][0]['x'][0] or end_time != fig_1['data'][0]['x'][-1]:
+            compute_graph = True
 
     if ctx.triggered_id == 'time_plot':
+        compute_graph = True
         if "xaxis.range[0]" in relayoutdata_1:
             # Get start and end time the user selected on the amplitude plot
             start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
@@ -256,8 +261,8 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1
         else:
             start_time = STARTTIME
             end_time = ENDTIME
-
-    if ctx.triggered_id == 'spectrogram':
+    elif ctx.triggered_id == 'spectrogram':
+        compute_graph = True
         if "xaxis.range[0]" in relayoutdata_2:
             # Get start and end time the user selected on the spectrogram
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
@@ -278,8 +283,9 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1
         # Maximum and minimum displayed spectrogram power values
         fig_2['layout']['coloraxis']['cmax'] = s_max
         fig_2['layout']['coloraxis']['cmin'] = s_min
+        #compute_graph = True
 
-    if ctx.triggered_id not in ['max', 'min', 'auto', 'Smax', 'Smin', 'export', 'max_freq', 'min_freq']:
+    if compute_graph and not dates_error:
         tr = TR.slice(start_time, end_time)
         fig_2 = prepare_spectrogram(tr=tr, s_min=s_min, s_max=s_max, hop_length=hop_length, win_length=win_length, n_fft=n_fft, window=window)
         try:
@@ -297,19 +303,22 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1
         max_per_window(tr, factor)
         fig_1 = prepare_rsam(tr)
         fig_2['layout']['yaxis']['range'] = [min_freq, max_freq]
-        start_time = TR.stats.starttime
-        end_time = TR.stats.endtime
         if len(tr) != 0:
             layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
             fig_1['layout'] = layout
 
-    print('Done!')
+    start_time = fig_1['data'][0]['x'][0]
+    end_time = fig_1['data'][0]['x'][-1]
+    if type(start_time) is str:  # First time is UTC, after is string
+        start_time = UTCDateTime(start_time)
+        end_time = UTCDateTime(end_time)
+    print('UPDATE COMPLETED!')
     return (fig_1, fig_2, {'autosize': True}, {'autosize': True},
             start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))
 
 
 # Run the app
-Timer(5, open_browser, args=(port,)).start()
+Timer(1, open_browser, args=(port,)).start()
 app.run_server(debug=False, port=port)
 
 

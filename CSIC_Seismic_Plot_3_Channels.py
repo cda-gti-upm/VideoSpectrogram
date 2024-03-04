@@ -72,18 +72,18 @@ app.layout = html.Div([
          dcc.Input(
              id='startdate',
              type='text',
-             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S"),
+             value=STARTTIME.strftime("%Y-%m-%d %H:%M:%S.%f"),
              style={'display': 'inline-block'},
              debounce=True
          ),
          dcc.Input(
              id='enddate',
              type='text',
-             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S"),
+             value=ENDTIME.strftime("%Y-%m-%d %H:%M:%S.%f"),
              debounce=True,
              style={'display': 'inline-block'},),
          '  ',
-         html.Button('Read new data', id='update', n_clicks=0),
+         html.Button('Update data', id='update', n_clicks=0),
          '  ',
          html.Button('Export in SVG', id='export', n_clicks=0),
          '   ',
@@ -139,9 +139,9 @@ app.layout = html.Div([
                       )],
             style={'display': 'in-line-block'})],
         style={'display': 'flex'}),
-    dcc.Graph(id='x_plot', figure=fig1, style={'width': '170vh', 'height': '25vh'}, relayoutData={'autosize': True}),
-    dcc.Graph(id='y_plot', figure=fig2, style={'width': '170vh', 'height': '25vh'}, relayoutData={'autosize': True}),
-    dcc.Graph(id='z_plot', figure=fig3, style={'width': '170vh', 'height': '25vh'}, relayoutData={'autosize': True})
+    dcc.Graph(id='x_plot', figure=fig1, style={'width': '170vh', 'height': '25vh'}, relayoutData={'autosize': True}, config={'modeBarButtonsToRemove': ['pan2d', 'autoScale2d']}),
+    dcc.Graph(id='y_plot', figure=fig2, style={'width': '170vh', 'height': '25vh'}, relayoutData={'autosize': True}, config={'modeBarButtonsToRemove': ['pan2d', 'autoScale2d']}),
+    dcc.Graph(id='z_plot', figure=fig3, style={'width': '170vh', 'height': '25vh'}, relayoutData={'autosize': True}, config={'modeBarButtonsToRemove': ['pan2d', 'autoScale2d']})
 ])
 
 
@@ -155,8 +155,8 @@ app.layout = html.Div([
     Output('startdate', 'value'),
     Output('enddate', 'value'),
     State('geophone_selector', 'value'),
-    Input('startdate', 'value'),
-    Input('enddate', 'value'),
+    State('startdate', 'value'),
+    State('enddate', 'value'),
     Input('x_plot', 'relayoutData'),
     Input('y_plot', 'relayoutData'),
     Input('z_plot', 'relayoutData'),
@@ -190,11 +190,13 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
         start_time = UTCDateTime(fig_1['data'][0]['x'][0])
         end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
         print('No valid dates')
-
+    print(start_time)
+    print(UTCDateTime(fig_1['data'][0]['x'][0]))
+    print(end_time)
+    print(UTCDateTime(fig_1['data'][0]['x'][-1]))
     if ctx.triggered_id == 'export':
         if not os.path.exists("./exports"):
             os.mkdir("./exports")
-
         lay_1 = fig_1['layout']
         title_1 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel X, from {start_time} until {end_time}'
         lay_1['title'] = {'font': {'size': 13}, 'text': title_1, 'x': 0.5, 'yanchor': 'top'}
@@ -213,19 +215,15 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
         figz = go.Figure(data=fig_3['data'], layout=lay_3)
         figz.write_image(file="./exports/figz.svg", format="svg", width=1920, height=1080, scale=1)
         print('Export completed.')
-
-
-    if ctx.triggered_id == 'kill_button':
+    elif ctx.triggered_id == 'kill_button':
         print('Closing app...')
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
+    elif ctx.triggered_id == 'update' and (start_time != UTCDateTime(fig_1['data'][0]['x'][0]) or end_time != UTCDateTime(fig_1['data'][0]['x'][-1])):
 
-    if ctx.triggered_id == 'update':
         [fig_1, fig_2, fig_3, start_time, end_time] = get_3_channel_figures(start_time, end_time, geo_sel,
-                                                                            filter_50Hz_f, path_root,
-                                                                            oversampling_factor, format_in)
-
+                                                  filter_50Hz_f, path_root, oversampling_factor, format_in)
     if ctx.triggered_id in ['x_plot', 'y_plot', 'z_plot']:
         if "xaxis.range[0]" in relayoutdata_1:
             start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
@@ -259,19 +257,10 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
         else:
             start_time = UTCDateTime(fig_1['data'][0]['x'][0])
             end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
-
+            print('HOLAAAA')
             fig_1['layout']['xaxis']['autorange'] = True
             fig_2['layout']['xaxis']['autorange'] = True
             fig_3['layout']['xaxis']['autorange'] = True
-
-    elif ctx.triggered_id in ['startdate', 'enddate']:
-
-        fig_1['layout']['xaxis']['autorange'] = False
-        fig_1['layout']['xaxis']['range'] = [start_time, end_time]
-        fig_2['layout']['xaxis']['autorange'] = False
-        fig_2['layout']['xaxis']['range'] = [start_time, end_time]
-        fig_3['layout']['xaxis']['autorange'] = False
-        fig_3['layout']['xaxis']['range'] = [start_time, end_time]
 
     if ctx.triggered_id not in ['update', 'export']:
         layout1 = update_layout_3_channels(fig_1, start_time, end_time, min_x, max_x, auto_x)
@@ -281,11 +270,19 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
         layout3 = update_layout_3_channels(fig_3, start_time, end_time, min_z, max_z, auto_z)
         fig_3['layout'] = layout3
 
-
-
-    print('Done!')
+    print(start_time)
+    print(UTCDateTime(fig_1['data'][0]['x'][0]))
+    print(end_time)
+    print(UTCDateTime(fig_1['data'][0]['x'][-1]))
+    if type(start_time) is str:  # First time is UTC, after is string
+        start_time = UTCDateTime(start_time)
+        end_time = UTCDateTime(end_time)
+    if ctx.triggered_id is None:
+        start_time = UTCDateTime(fig_1['data'][0]['x'][0])
+        end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
+    print('UPDATE COMPLETED!')
     return (fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True},
-            start_time.strftime("%Y-%m-%d %H:%M:%S"), end_time.strftime("%Y-%m-%d %H:%M:%S"))
+            start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))
 
 
  # Run the app

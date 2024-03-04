@@ -13,7 +13,7 @@ from tqdm import tqdm
 import math
 from ltsa.ltsa import seismicLTSA
 import librosa.display
-
+import pickle
 
 def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, verbose=True):
     """
@@ -58,7 +58,8 @@ def read_data_from_folder(path_data, format, starttime, endtime, filter_50Hz_f, 
             except Exception as e:
                 if verbose:
                     print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
-                    print('There may be a problem with the PICKLE file')
+                    if e is pickle.UnpicklingError:
+                        print(f'There is a problem with the PICKLE file: {file}')
                     sys.exit()
     return st
 def read_and_preprocessing(path, in_format, start, end, filter_50Hz_f):
@@ -118,7 +119,8 @@ def get_start_end_time(path, format='PICKLE'):
             endtime.append(st_head[0].stats.endtime)
         except Exception as e:
             print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
-            print('There may be a problem with the PICKLE file')
+            if e is pickle.UnpicklingError:
+                print(f'There is a problem with the PICKLE file: {file}')
             sys.exit()
     return min(starttime), max(endtime)
 
@@ -210,7 +212,7 @@ def get_3_channel_figures(starttime, endtime, geophone, filter_50Hz_f, path_root
     tr = read_and_preprocessing(data_path[2], format_in, starttime, endtime, filter_50Hz_f)
     fig3 = prepare_time_plot_3_channels(tr, oversampling_factor, 'Z')
 
-    return fig1, fig2, fig3, starttime, endtime
+    return fig1, fig2, fig3, fig1['data'][0]['x'][0], fig1['data'][0]['x'][-1]
 
 def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
     print(f'Preparing figure...')
@@ -298,7 +300,7 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
         frame_indices = np.arange(d.shape[1])
         time_rel = librosa.frames_to_time(frame_indices, sr=tr.meta.sampling_rate, hop_length=hop_length, n_fft=None)
         freqs = np.arange(0, 1 + n_fft / 2) * tr.meta.sampling_rate / n_fft
-        print(S_db)
+
 
     print(f'Spectrogram has {len(S_db)} samples...')
     time_abs = list([tr.stats.starttime + time_rel[0]])
@@ -314,8 +316,6 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
     fig.layout['coloraxis']['colorbar']['orientation'] = 'h'
     fig.layout['coloraxis']['colorbar']['yanchor'] = 'bottom'
     fig.layout['coloraxis']['colorbar']['y'] = -0.25
-    fig.show()
-    #sys.exit()
     fig['layout']['yaxis']['autorange'] = False
     fig['layout']['yaxis']['range'] = [5, 125]
     fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
@@ -361,7 +361,8 @@ def update_layout_3_channels(fig, starttime, endtime, min_y, max_y, auto_y):
     """
 
     layout = fig['layout']
-
+    fig['layout']['xaxis']['autorange'] = False
+    fig['layout']['xaxis']['range'] = [starttime, endtime]
     if auto_y == ['autorange']:
         times = np.array(fig['data'][0]['x'])
         data = np.array(fig['data'][0]['y'])
