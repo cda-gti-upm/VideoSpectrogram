@@ -16,7 +16,7 @@ from CSIC_Seismic_Visualizator_Utils import read_and_preprocessing, open_browser
 import socket
 import plotly.graph_objs as go
 import obspy.signal.filter
-
+import time
 
 # Get arguments
 args = sys.argv
@@ -206,6 +206,7 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1
     global GEOPHONE
     global STARTTIME
     global ENDTIME
+    ini_exec_time = time.time()
     dates_error = False
     compute_graph = True if ctx.triggered_id is None else False
     try:
@@ -312,6 +313,7 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1
     if type(start_time) is str:  # First time is UTC, after is string
         start_time = UTCDateTime(start_time)
         end_time = UTCDateTime(end_time)
+    print(f'Execution took {round(time.time() - ini_exec_time, 2)} seconds...')
     print('UPDATE COMPLETED!')
     return (fig_1, fig_2, {'autosize': True}, {'autosize': True},
             start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))

@@ -174,6 +174,12 @@ def prepare_time_plot(tr, oversampling_factor):
         fig['layout']['margin'] = {'t': 30, 'b': 30}
         fig['layout']['xaxis']['automargin'] = False
         fig['layout']['yaxis']['autorange'] = True
+        fig.update_xaxes(
+            showgrid=True,
+            ticks="inside",
+            tickson="boundaries",
+            ticklen=10
+        )
     else:
         fig = px.line()  # If the trace has no data generate an empty fig
     return fig
@@ -246,6 +252,12 @@ def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
 
     fig['layout']['xaxis']['automargin'] = False
     fig['layout']['yaxis']['autorange'] = True
+    fig.update_xaxes(
+        showgrid=True,
+        ticks="inside",
+        tickson="boundaries",
+        ticklen=10
+    )
     return fig
 
 
@@ -262,6 +274,12 @@ def prepare_rsam(tr):
     fig['layout']['margin'] = {'t': 30, 'b': 30}
     fig['layout']['xaxis']['automargin'] = False
     fig['layout']['yaxis']['autorange'] = True
+    fig.update_xaxes(
+        showgrid=True,
+        ticks="inside",
+        tickson="boundaries",
+        ticklen=10
+    )
     return fig
 
 
@@ -321,6 +339,12 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
     fig['layout']['title'] = {'font': {'size': 13}, 'text': title, 'x': 0.5, 'yanchor': 'top'}
     fig['layout']['margin'] = {'t': 30, 'b': 30}
     fig['layout']['xaxis']['automargin'] = False
+    fig.update_xaxes(
+        showgrid=True,
+        ticks="inside",
+        tickson="boundaries",
+        ticklen=10
+    )
 
     return fig
 
@@ -472,3 +496,32 @@ def max_per_window(tr, factor):
     tr.data = data
     df = pd.DataFrame({'data': data, 'times': tr.times('utcdatetime')})
     return df
+
+
+def create_config(params, file_name):
+    # Step 1: Import Pickle
+    import pickle
+
+    # Step 2: Saving Variables
+
+    if not os.path.exists("./user_config"):
+        os.mkdir("./exports")
+    file_path = f'user_config/{file_name}.pickle'
+
+    # Open the file in binary mode
+    with open(file_path, 'wb') as file:
+        # Serialize and write the variable to the file
+        pickle.dump(params, file)
+
+
+def load_config(file_path):
+    loaded_data = None
+    try:
+        with open(file_path, 'rb') as file:
+            # Deserialize and retrieve the variable from the file
+            loaded_data = pickle.load(file)
+        print("The variable 'data' has been loaded successfully.")
+    except Exception as e:
+        print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
+
+    return loaded_data

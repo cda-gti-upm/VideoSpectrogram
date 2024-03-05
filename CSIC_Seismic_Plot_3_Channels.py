@@ -14,8 +14,8 @@ import pyautogui
 import socket
 from CSIC_Seismic_Visualizator_Utils import (open_browser, get_3_channel_figures, update_layout_3_channels)
 import plotly.graph_objs as go
-
-
+import time
+from plotly.subplots import make_subplots
 
 args = sys.argv
 GEOPHONE = args[1]
@@ -178,7 +178,7 @@ app.layout = html.Div([
 )
 def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
                 min_y, max_z, min_z, auto_x, auto_y, auto_z, button, update, export_button, fig_1, fig_2, fig_3):
-
+    ini_exec_time = time.time()
     try:
         start_time = UTCDateTime(starttime_app)
         end_time = UTCDateTime(endtime_app)
@@ -190,11 +190,8 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
         start_time = UTCDateTime(fig_1['data'][0]['x'][0])
         end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
         print('No valid dates')
-    print(start_time)
-    print(UTCDateTime(fig_1['data'][0]['x'][0]))
-    print(end_time)
-    print(UTCDateTime(fig_1['data'][0]['x'][-1]))
     if ctx.triggered_id == 'export':
+        print('Saving figures...')
         if not os.path.exists("./exports"):
             os.mkdir("./exports")
         lay_1 = fig_1['layout']
@@ -202,17 +199,19 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
         lay_1['title'] = {'font': {'size': 13}, 'text': title_1, 'x': 0.5, 'yanchor': 'top'}
         figx = go.Figure(data=fig_1['data'], layout=lay_1)
         figx.write_image(file="./exports/figx.svg", format="svg", width=1920, height=1080, scale=1)
-
         lay_2 = fig_2['layout']
         title_2 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel Y, from {start_time} until {end_time}'
         lay_2['title'] = {'font': {'size': 13}, 'text': title_2, 'x': 0.5, 'yanchor': 'top'}
         figy = go.Figure(data=fig_2['data'], layout=lay_2)
         figy.write_image(file="./exports/figy.svg", format="svg", width=1920, height=1080, scale=1)
-
         lay_3 = fig_3['layout']
         title_3 = f'Seismic amplitude, CSIC, {location}, {geo_sel}, channel Z, from {start_time} until {end_time}'
         lay_3['title'] = {'font': {'size': 13}, 'text': title_3, 'x': 0.5, 'yanchor': 'top'}
         figz = go.Figure(data=fig_3['data'], layout=lay_3)
+        figz.write_image(file="./exports/figz.svg", format="svg", width=1920, height=1080, scale=1)
+        print('Export completed.')
+
+
         figz.write_image(file="./exports/figz.svg", format="svg", width=1920, height=1080, scale=1)
         print('Export completed.')
     elif ctx.triggered_id == 'kill_button':
@@ -270,20 +269,16 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
         layout3 = update_layout_3_channels(fig_3, start_time, end_time, min_z, max_z, auto_z)
         fig_3['layout'] = layout3
 
-    print(start_time)
-    print(UTCDateTime(fig_1['data'][0]['x'][0]))
-    print(end_time)
-    print(UTCDateTime(fig_1['data'][0]['x'][-1]))
     if type(start_time) is str:  # First time is UTC, after is string
         start_time = UTCDateTime(start_time)
         end_time = UTCDateTime(end_time)
     if ctx.triggered_id is None:
         start_time = UTCDateTime(fig_1['data'][0]['x'][0])
         end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
+    print(f'Execution took {round(time.time() - ini_exec_time, 2)} seconds...')
     print('UPDATE COMPLETED!')
     return (fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True},
             start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))
-
 
  # Run the app
 Timer(1, open_browser, args=(port,)).start()

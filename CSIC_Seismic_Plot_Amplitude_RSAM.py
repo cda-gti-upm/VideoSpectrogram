@@ -4,7 +4,7 @@ Read datafiles of given locations (geophones) and channels and generate one inde
 one.
 """
 
-
+import time
 import numpy as np
 from obspy.core import UTCDateTime
 from dash import Dash, dcc, html, Input, Output, State, ctx
@@ -176,12 +176,13 @@ app.layout = html.Div([
 )
 def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
                 min_y_rsam, auto_y, auto_y_rsam, button, export_button, update, fig_1, fig_2):
+
     global TR
     global CHANNEL
     global GEOPHONE
     global STARTTIME
     global ENDTIME
-
+    ini_exec_time = time.time()
     dates_error = False
     compute_graph = True if ctx.triggered_id is None else False
 
@@ -272,6 +273,7 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutd
     if type(start_time) is str: #First time is UTC, after is string
         start_time = UTCDateTime(start_time)
         end_time = UTCDateTime(end_time)
+    print(f'Execution took {round(time.time() - ini_exec_time, 2)} seconds...')
     print('UPDATE COMPLETED!')
     return (fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S.%f"),
             end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))
