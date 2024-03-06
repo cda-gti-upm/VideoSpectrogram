@@ -12,7 +12,8 @@ import os
 import signal
 import pyautogui
 import socket
-from CSIC_Seismic_Visualizator_Utils import (open_browser, get_3_channel_figures, update_layout_3_channels)
+from CSIC_Seismic_Visualizator_Utils import (open_browser, get_3_channel_figures, update_layout_3_channels,
+                                             create_config)
 import plotly.graph_objs as go
 import time
 from plotly.subplots import make_subplots
@@ -24,6 +25,17 @@ end = args[3]
 filt_50Hz = args[4]
 format_in = args[5]
 location = args[6]
+min_y_fig1 = float(args[7])
+max_y_fig1 = float(args[8])
+auto_y_fig1 = args[9]
+min_y_fig2 = float(args[10])
+max_y_fig2 = float(args[11])
+auto_y_fig2 = args[12]
+min_y_fig3 = float(args[13])
+max_y_fig3 = float(args[14])
+auto_y_fig3 = args[15]
+
+OPTION = 2
 
 oversampling_factor = 20
 sock = socket.socket()
@@ -36,7 +48,7 @@ path_root = f'./data/CSIC_{location}'
 
 try:
     if start:
-        STARTTIME = UTCDateTime(start, iso8601=True)
+        STARTTIME = UTCDateTime(start)
     else:
         STARTTIME = None
 
@@ -57,6 +69,9 @@ if filt_50Hz == 's':
 else:
     filter_50Hz_f = False
 
+auto_y_fig1 = ['autorange'] if auto_y_fig1 == 'autorange' else []
+auto_y_fig2 = ['autorange'] if auto_y_fig2 == 'autorange' else []
+auto_y_fig3 = ['autorange'] if auto_y_fig3 == 'autorange' else []
 
 [fig1, fig2, fig3, STARTTIME, ENDTIME] = get_3_channel_figures(STARTTIME, ENDTIME, GEOPHONE, filter_50Hz_f, path_root, oversampling_factor, format_in)
 
@@ -87,54 +102,63 @@ app.layout = html.Div([
          '  ',
          html.Button('Export in SVG', id='export', n_clicks=0),
          '   ',
-         html.Button('Close app', id='kill_button', n_clicks=0)],
+         html.Button('Close app', id='kill_button', n_clicks=0),
+         '      ',
+         dcc.Input(
+             id='config_name',
+             type='text',
+             value='',
+             debounce=True,
+             style={'display': 'inline-block'}),
+         html.Button('Save config.', id='save_config', n_clicks=0)
+         ],
     ),
     html.Div(children=[
         html.Div(
-            children=[dcc.Checklist(id='auto_x', options=['autorange'], value=['autorange']),
+            children=[dcc.Checklist(id='auto_x', options=['autorange'], value=auto_y_fig1),
                       html.Div('Channel X amplitude range (min to max)'),
                       dcc.Input(
                           id='min_x',
                           type='number',
-                          value=0,
+                          value=min_y_fig1,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max_x',
                           type='number',
-                          value=0,
+                          value=max_y_fig1,
                           debounce=True
                       )],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
         html.Div(
-            children=[dcc.Checklist(id='auto_y', options=['autorange'], value=['autorange']),
+            children=[dcc.Checklist(id='auto_y', options=['autorange'], value=auto_y_fig2),
                       html.Div('Channel Y amplitude range (min to max)'),
                       dcc.Input(
                           id='min_y',
                           type='number',
-                          value=0,
+                          value=min_y_fig2,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max_y',
                           type='number',
-                          value=0,
+                          value=max_y_fig2,
                           debounce=True
                       )],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
         html.Div(
-            children=[dcc.Checklist(id='auto_z', options=['autorange'], value=['autorange']),
+            children=[dcc.Checklist(id='auto_z', options=['autorange'], value=auto_y_fig3),
                       html.Div('Channel Z amplitude range (min to max)'),
                       dcc.Input(
                           id='min_z',
                           type='number',
-                          value=0,
+                          value=min_y_fig3,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max_z',
                           type='number',
-                          value=0,
+                          value=max_y_fig3,
                           debounce=True
                       )],
             style={'display': 'in-line-block'})],
@@ -157,6 +181,7 @@ app.layout = html.Div([
     State('geophone_selector', 'value'),
     State('startdate', 'value'),
     State('enddate', 'value'),
+    State('config_name', 'value'),
     Input('x_plot', 'relayoutData'),
     Input('y_plot', 'relayoutData'),
     Input('z_plot', 'relayoutData'),
@@ -172,12 +197,13 @@ app.layout = html.Div([
     Input('kill_button', 'n_clicks'),
     Input('update', 'n_clicks'),
     Input('export', 'n_clicks'),
+    Input('save_config', 'n_clicks'),
     State('x_plot', 'figure'),
     State('y_plot', 'figure'),
     State('z_plot', 'figure'),
 )
-def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
-                min_y, max_z, min_z, auto_x, auto_y, auto_z, button, update, export_button, fig_1, fig_2, fig_3):
+def update_plot(geo_sel, starttime_app, endtime_app, config_name, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
+                min_y, max_z, min_z, auto_x, auto_y, auto_z, button, update, export_button, save, fig_1, fig_2, fig_3):
     ini_exec_time = time.time()
     try:
         start_time = UTCDateTime(starttime_app)
@@ -212,13 +238,29 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
         print('Export completed.')
 
 
-        figz.write_image(file="./exports/figz.svg", format="svg", width=1920, height=1080, scale=1)
-        print('Export completed.')
     elif ctx.triggered_id == 'kill_button':
         print('Closing app...')
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
+    elif ctx.triggered_id == 'save_config':
+        parameters = {'option': OPTION,
+                      'start_time': start_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                      'end_time': end_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                      'geophone': GEOPHONE,
+                      'filt_50Hz': filt_50Hz,
+                      'format_in': format_in,
+                      'location': location,
+                      'min_y_fig1': str(min_x),
+                      'max_y_fig1': str(max_x),
+                      'auto_y_fig1': auto_x,
+                      'min_y_fig2': str(min_y),
+                      'max_y_fig2': str(max_y),
+                      'auto_y_fig2': auto_y,
+                      'min_y_fig3': str(min_z),
+                      'max_y_fig3': str(max_z),
+                      'auto_y_fig3': auto_z}
+        create_config(parameters, config_name)
     elif ctx.triggered_id == 'update' and (start_time != UTCDateTime(fig_1['data'][0]['x'][0]) or end_time != UTCDateTime(fig_1['data'][0]['x'][-1])):
 
         [fig_1, fig_2, fig_3, start_time, end_time] = get_3_channel_figures(start_time, end_time, geo_sel,
@@ -256,7 +298,6 @@ def update_plot(geo_sel, starttime_app, endtime_app, relayoutdata_1, relayoutdat
         else:
             start_time = UTCDateTime(fig_1['data'][0]['x'][0])
             end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
-            print('HOLAAAA')
             fig_1['layout']['xaxis']['autorange'] = True
             fig_2['layout']['xaxis']['autorange'] = True
             fig_3['layout']['xaxis']['autorange'] = True

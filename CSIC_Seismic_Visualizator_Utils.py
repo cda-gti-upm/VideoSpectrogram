@@ -505,13 +505,12 @@ def create_config(params, file_name):
     # Step 2: Saving Variables
 
     if not os.path.exists("./user_config"):
-        os.mkdir("./exports")
-    file_path = f'user_config/{file_name}.pickle'
-
+        os.mkdir("./user_config")
+    file_path = f"./user_config/{file_name}.pickle"
     # Open the file in binary mode
     with open(file_path, 'wb') as file:
         # Serialize and write the variable to the file
-        pickle.dump(params, file)
+        pickle.dump(params, file, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def load_config(file_path):
@@ -520,7 +519,6 @@ def load_config(file_path):
         with open(file_path, 'rb') as file:
             # Deserialize and retrieve the variable from the file
             loaded_data = pickle.load(file)
-        print("The variable 'data' has been loaded successfully.")
     except Exception as e:
         print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
 

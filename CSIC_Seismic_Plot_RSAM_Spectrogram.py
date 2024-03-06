@@ -12,7 +12,7 @@ from threading import Timer
 import os
 import signal
 import pyautogui
-from CSIC_Seismic_Visualizator_Utils import read_and_preprocessing, open_browser, prepare_spectrogram, update_layout, prepare_rsam, max_per_window
+from CSIC_Seismic_Visualizator_Utils import read_and_preprocessing, open_browser, prepare_spectrogram, update_layout, prepare_rsam, max_per_window, create_config
 import socket
 import plotly.graph_objs as go
 import obspy.signal.filter
@@ -27,12 +27,19 @@ end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
 location = args[7]
-win_length = int(args[8])
-hop_length = int(args[9])
-n_fft = int(args[10])
-window = args[11]
-S_max = int(args[12])
-S_min = int(args[13])
+min_y_fig1 = float(args[8])
+max_y_fig1 = float(args[9])
+auto_y_fig1 = args[10]
+min_y_fig2 = float(args[11])
+max_y_fig2 = float(args[12])
+win_length = int(args[13])
+hop_length = int(args[14])
+n_fft = int(args[15])
+window = args[16]
+S_min = int(args[17])
+S_max = int(args[18])
+
+OPTION = 4
 
 # Get a random free port
 sock = socket.socket()
@@ -44,7 +51,7 @@ oversampling_factor = 2  # The higher, the more samples in the amplitude figure
 
 try:
     if start:
-        STARTTIME = UTCDateTime(start, iso8601=True)
+        STARTTIME = UTCDateTime(start)
     else:
         STARTTIME = None
 
@@ -66,6 +73,8 @@ if filt_50Hz == 's':
 else:
     filter_50Hz_f = False
 
+
+auto_y_fig1 = ['autorange'] if auto_y_fig1 == 'autorange' else []
 
 path_root = './data/CSIC_LaPalma'
 data_path = path_root + '_' + GEOPHONE + '_' + CHANNEL
@@ -114,23 +123,31 @@ app.layout = html.Div([
          '  ',
          html.Button('Export in SVG', id='export', n_clicks=0),
          '  ',
-         html.Button('Close app', id='kill_button', n_clicks=0)],
+         html.Button('Close app', id='kill_button', n_clicks=0),
+         '      ',
+         dcc.Input(
+             id='config_name',
+             type='text',
+             value='',
+             debounce=True,
+             style={'display': 'inline-block'}),
+         html.Button('Save config.', id='save_config', n_clicks=0)],
     ),
 
     html.Div(children=[
         html.Div(
-            children=[dcc.Checklist(id='auto', options=['autorange'], value=['autorange']),
+            children=[dcc.Checklist(id='auto', options=['autorange'], value=auto_y_fig1),
                       html.Div('Amplitude range (min to max)'),
                       dcc.Input(
                           id='min',
                           type='number',
-                          value=0,
+                          value=min_y_fig1,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max',
                           type='number',
-                          value=0,
+                          value=max_y_fig1,
                           debounce=True
                       )],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
@@ -140,13 +157,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='min_freq',
                           type='number',
-                          value=5,
+                          value=min_y_fig2,
                           debounce=True
                       ),
                       dcc.Input(
                           id='max_freq',
                           type='number',
-                          value=125,
+                          value=max_y_fig2,
                           debounce=True
                       )],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
@@ -156,13 +173,13 @@ app.layout = html.Div([
                       dcc.Input(
                           id='Smin',
                           type='number',
-                          value=75,
+                          value=S_min,
                           debounce=True
                       ),
                       dcc.Input(
                           id='Smax',
                           type='number',
-                          value=130,
+                          value=S_max,
                           debounce=True
                       )],
             style={'display': 'in-line-block'})],
@@ -184,6 +201,7 @@ app.layout = html.Div([
     State('channel_selector', 'value'),
     State('startdate', 'value'),
     State('enddate', 'value'),
+    State('config_name', 'value'),
     Input('time_plot', 'relayoutData'),
     Input('spectrogram', 'relayoutData'),
     Input('max', 'value'),
@@ -194,13 +212,14 @@ app.layout = html.Div([
     Input('kill_button', 'n_clicks'),
     Input('export', 'n_clicks'),
     Input('update', 'n_clicks'),
+    Input('save_config', 'n_clicks'),
     Input('Smin', 'value'),
     Input('Smax', 'value'),
     State('time_plot', 'figure'),
     State('spectrogram', 'figure')
 )
-def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, max_y, min_y, max_freq,
-           min_freq, auto_y, button, esport_button, update, s_min, s_max, fig_1, fig_2):
+def update(geo_sel, channel_selector, starttime_app, endtime_app, config_name, relayoutdata_1, relayoutdata_2, max_y, min_y, max_freq,
+           min_freq, auto_y, button, esport_button, update, save, s_min, s_max, fig_1, fig_2):
     global TR
     global CHANNEL
     global GEOPHONE
@@ -227,7 +246,27 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
-
+    elif ctx.triggered_id == 'save_config':
+        parameters = {'option': OPTION,
+                      'start_time': start_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                      'end_time': end_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                      'geophone': GEOPHONE,
+                      'channel': CHANNEL,
+                      'filt_50Hz': filt_50Hz,
+                      'format_in': format_in,
+                      'location': location,
+                      'min_y_fig1': str(min_y),
+                      'max_y_fig1': str(max_y),
+                      'auto_y_fig1': auto_y,
+                      'min_y_fig2': str(min_freq),
+                      'max_y_fig2': str(max_freq),
+                      'win_length': str(win_length),
+                      'hop_length': str(hop_length),
+                      'n_fft': str(n_fft),
+                      'window': str(window),
+                      's_min': str(s_min),
+                      's_max': str(s_max)}
+        create_config(parameters, config_name)
     elif ctx.triggered_id == 'export':
         if not os.path.exists("./exports"):
             os.mkdir("./exports")

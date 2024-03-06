@@ -16,7 +16,7 @@ import pyautogui
 import socket
 import plotly.graph_objs as go
 from CSIC_Seismic_Visualizator_Utils import (read_and_preprocessing, open_browser, prepare_time_plot,
-                                             update_layout, prepare_rsam, update_layout_rsam)
+                                             update_layout, prepare_rsam, update_layout_rsam, create_config)
 
 
 # Get arguments
@@ -28,6 +28,16 @@ end = args[4]
 filt_50Hz = args[5]
 format_in = args[6]
 location = args[7]
+min_y_fig1 = float(args[8])
+max_y_fig1 = float(args[9])
+auto_y_fig1 = args[10]
+min_y_fig2 = float(args[11])
+max_y_fig2 = float(args[12])
+auto_y_fig2 = args[13]
+
+
+
+OPTION = 1
 
 oversampling_factor = 2  # A higher value gives more samples to the plot
 
@@ -40,7 +50,7 @@ del sock
 
 try:
     if start:
-        STARTTIME = UTCDateTime(start, iso8601=True)
+        STARTTIME = UTCDateTime(start)
     else:
         STARTTIME = None
 
@@ -61,6 +71,9 @@ if filt_50Hz == 's':
 else:
     filter_50Hz_f = False
 
+
+auto_y_fig1 = ['autorange'] if auto_y_fig1 == 'autorange' else []
+auto_y_fig2 = ['autorange'] if auto_y_fig2 == 'autorange' else []
 
 path_root = f'./data/CSIC_{location}'
 data_path = path_root + '_' + GEOPHONE + '_' + CHANNEL
@@ -109,37 +122,45 @@ app.layout = html.Div([
          '  ',
          html.Button('Export in SVG', id='export', n_clicks=0),
          '  ',
-         html.Button('Close app', id='kill_button', n_clicks=0)]
+         html.Button('Close app', id='kill_button', n_clicks=0),
+         '      ',
+         dcc.Input(
+             id='config_name',
+             type='text',
+             value='',
+             debounce=True,
+             style={'display': 'inline-block'}),
+         html.Button('Save config.', id='save_config', n_clicks=0)]
     ),
     html.Div(children=[
         html.Div(
-            children=[dcc.Checklist(id='auto', options=['autorange'], value=['autorange']),
+            children=[dcc.Checklist(id='auto', options=['autorange'], value=auto_y_fig1),
                       html.Div('Amplitude range (min to max):'),
                       dcc.Input(
                           id='min',
                           type='number',
-                          value=0,
+                          value=min_y_fig1,
                           debounce=True),
                       ' ',
                       dcc.Input(
                           id='max',
                           type='number',
-                          value=0,
+                          value=max_y_fig1,
                           debounce=True)],
             style={'display': 'in-line-block', 'padding-right': '0.5em'}),
         html.Div(
-            children=[dcc.Checklist(id='auto_RSAM', options=['autorange'], value=['autorange']),
+            children=[dcc.Checklist(id='auto_RSAM', options=['autorange'], value=auto_y_fig2),
                       html.Div('RSAM range (min to max):'),
                       dcc.Input(
                           id='min_RSAM',
                           type='number',
-                          value=0,
+                          value=min_y_fig2,
                           debounce=True),
                       ' ',
                       dcc.Input(
                           id='max_RSAM',
                           type='number',
-                          value=0,
+                          value=max_y_fig2,
                           debounce=True)],
             style={'display': 'inline-block'}),],
         style={'display': 'flex'}),
@@ -160,6 +181,7 @@ app.layout = html.Div([
     State('channel_selector', 'value'),
     State('startdate', 'value'),
     State('enddate', 'value'),
+    State('config_name', 'value'),
     Input('time_plot', 'relayoutData'),
     Input('RSAM', 'relayoutData'),
     Input('max', 'value'),
@@ -171,11 +193,12 @@ app.layout = html.Div([
     Input('kill_button', 'n_clicks'),
     Input('export', 'n_clicks'),
     Input('update', 'n_clicks'),
+    Input('save_config', 'n_clicks'),
     State('time_plot', 'figure'),
     State('RSAM', 'figure'),
 )
-def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
-                min_y_rsam, auto_y, auto_y_rsam, button, export_button, update, fig_1, fig_2):
+def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, config_name, relayoutdata_1, relayoutdata_2, max_y, min_y, max_y_rsam,
+                min_y_rsam, auto_y, auto_y_rsam, button, export_button, update, save, fig_1, fig_2):
 
     global TR
     global CHANNEL
@@ -206,6 +229,22 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutd
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
+    elif ctx.triggered_id == 'save_config':
+        parameters = {'option': OPTION,
+                      'start_time': start_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                      'end_time': end_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
+                      'geophone': GEOPHONE,
+                      'channel': CHANNEL,
+                      'filt_50Hz': filt_50Hz,
+                      'format_in': format_in,
+                      'location': location,
+                      'min_y_fig1': str(min_y),
+                      'max_y_fig1': str(max_y),
+                      'auto_y_fig1': auto_y,
+                      'min_y_fig2': str(min_y_rsam),
+                      'max_y_fig2': str(max_y_rsam),
+                      'auto_y_fig2': auto_y_rsam}
+        create_config(parameters, config_name)
     elif ctx.triggered_id == 'export':
         if not os.path.exists("./exports"):
             os.mkdir("./exports")
@@ -262,6 +301,7 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, relayoutd
         tr = TR.slice(start_time, end_time)
         fig_1 = prepare_time_plot(tr, oversampling_factor)
         fig_2 = prepare_rsam(tr)
+
         if len(tr) != 0:
             layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
             fig_1['layout'] = layout
