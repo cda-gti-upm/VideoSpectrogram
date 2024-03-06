@@ -346,9 +346,10 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, config_name, r
         if len(tr) != 0:
             layout = update_layout(fig_1['layout'], min_y, max_y, auto_y, fig_1)
             fig_1['layout'] = layout
+            start_time = fig_1['data'][0]['x'][0]
+            end_time = fig_1['data'][0]['x'][-1]
 
-    start_time = fig_1['data'][0]['x'][0]
-    end_time = fig_1['data'][0]['x'][-1]
+
     if type(start_time) is str:  # First time is UTC, after is string
         start_time = UTCDateTime(start_time)
         end_time = UTCDateTime(end_time)

@@ -307,9 +307,10 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, config_na
             fig_1['layout'] = layout
             layout_rsam = update_layout_rsam(fig_2['layout'], min_y_rsam, max_y_rsam, auto_y_rsam)
             fig_2['layout'] = layout_rsam
+            start_time = fig_1['data'][0]['x'][0]
+            end_time = fig_1['data'][0]['x'][-1]
 
-    start_time = fig_1['data'][0]['x'][0]
-    end_time = fig_1['data'][0]['x'][-1]
+
     if type(start_time) is str: #First time is UTC, after is string
         start_time = UTCDateTime(start_time)
         end_time = UTCDateTime(end_time)

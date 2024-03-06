@@ -209,6 +209,9 @@ def get_3_channel_figures(starttime, endtime, geophone, filter_50Hz_f, path_root
         end_times.append(endtime)
         endtime = min(end_times)
 
+    if starttime > endtime:
+        print('Dates are invalid. Choose valid dates and press "Update data".')
+        endtime = starttime
     tr = read_and_preprocessing(data_path[0], format_in, starttime, endtime, filter_50Hz_f)
     fig1 = prepare_time_plot_3_channels(tr, oversampling_factor, 'X')
 
