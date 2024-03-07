@@ -178,7 +178,8 @@ def prepare_time_plot(tr, oversampling_factor):
             showgrid=True,
             ticks="inside",
             tickson="boundaries",
-            ticklen=10
+            ticklen=10,
+            nticks=20
         )
     else:
         fig = px.line()  # If the trace has no data generate an empty fig
@@ -259,7 +260,8 @@ def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
         showgrid=True,
         ticks="inside",
         tickson="boundaries",
-        ticklen=10
+        ticklen=10,
+        nticks=20
     )
     return fig
 
@@ -281,7 +283,8 @@ def prepare_rsam(tr):
         showgrid=True,
         ticks="inside",
         tickson="boundaries",
-        ticklen=10
+        ticklen=10,
+        nticks=20
     )
     return fig
 
@@ -342,7 +345,8 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
         showgrid=True,
         ticks="inside",
         tickson="boundaries",
-        ticklen=10
+        ticklen=10,
+        nticks=20
     )
 
     return fig
