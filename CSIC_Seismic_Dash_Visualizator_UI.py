@@ -121,12 +121,22 @@ else:
               f'S_min: {S_min}\n')
         mod = input('¿Desea modificar los parámetros del espectrograma(s ó n)?\n')
         if mod == 's':
-            win_length = input('win_length: ')
-            hop_length = input('hop_length: ')
-            n_fft = input('n_fft: ')
-            window = input('window: ')
-            S_max = input('S_max: ')
-            S_min = input('S_min: ')
+            try:
+                win_length = str(int(input('win_length: ')))
+                hop_length = str(int(input('hop_length: ')))
+                n_fft = str(int(input('n_fft: ')))
+                window = str(int(input('window: ')))
+                S_max = str(int(input('S_max: ')))
+                S_min = str(int(input('S_min: ')))
+            except Exception:
+                print('Parámetros por defecto seleccionados.')
+                win_length = '1024'
+                hop_length = '256'
+                n_fft = '2048'
+                window = 'hann'
+                S_max = '130'
+                S_min = '75'
+
         if vis_type == '3':
             proc = subprocess.run(['python', 'CSIC_Seismic_Plot_Amplitude_Spectrogram.py', geo, channel, start, end, filter_50Hz_f, formato, location, min_y_fig1, max_y_fig1, auto_y_fig1, min_y_fig2, max_y_fig2,
                  win_length, hop_length, n_fft, window, S_min, S_max])

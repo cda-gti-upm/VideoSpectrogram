@@ -307,7 +307,6 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
         # compute the LTSA -- identical to s.compute()
         d.compute(ref=1, amin=1e-5, top_db=None)
         S_db = d.ltsa
-        print(S_db.shape[1])
         frame_indices = np.arange(S_db.shape[1])
         time_rel = (np.asanyarray(frame_indices) * d.div_len + (d.div_len / 2)).astype(int) / float(
             tr.meta.sampling_rate)
@@ -322,8 +321,6 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
         time_rel = librosa.frames_to_time(frame_indices, sr=tr.meta.sampling_rate, hop_length=hop_length, n_fft=None)
         freqs = np.arange(0, 1 + n_fft / 2) * tr.meta.sampling_rate / n_fft
 
-
-    print(f'Spectrogram has {len(S_db)} samples...')
     time_abs = list([tr.stats.starttime + time_rel[0]])
     time_abs[0] = tr.stats.starttime + time_rel[0]
     for i in range(1, len(time_rel)):
@@ -333,7 +330,6 @@ def prepare_spectrogram(tr, s_min, s_max, hop_length, win_length, n_fft, window)
                     labels={'y': 'Frequency (Hz)', 'color': 'Power (dB)'},
                     color_continuous_scale='jet', zmin=s_min, zmax=s_max)
 
-    #fig.layout.coloraxis.showscale = False
     fig.layout['coloraxis']['colorbar']['orientation'] = 'h'
     fig.layout['coloraxis']['colorbar']['yanchor'] = 'bottom'
     fig.layout['coloraxis']['colorbar']['y'] = -0.25

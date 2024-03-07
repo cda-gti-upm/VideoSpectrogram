@@ -204,6 +204,7 @@ app.layout = html.Div([
 )
 def update_plot(geo_sel, starttime_app, endtime_app, config_name, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
                 min_y, max_z, min_z, auto_x, auto_y, auto_z, button, update, export_button, save, fig_1, fig_2, fig_3):
+    global GEOPHONE
     ini_exec_time = time.time()
     try:
         start_time = UTCDateTime(starttime_app)
@@ -261,8 +262,8 @@ def update_plot(geo_sel, starttime_app, endtime_app, config_name, relayoutdata_1
                       'max_y_fig3': str(max_z),
                       'auto_y_fig3': auto_z}
         create_config(parameters, config_name)
-    elif ctx.triggered_id == 'update' and (start_time != UTCDateTime(fig_1['data'][0]['x'][0]) or end_time != UTCDateTime(fig_1['data'][0]['x'][-1])):
-
+    elif ctx.triggered_id == 'update' and (geo_sel != GEOPHONE or start_time != UTCDateTime(fig_1['data'][0]['x'][0]) or end_time != UTCDateTime(fig_1['data'][0]['x'][-1])):
+        GEOPHONE = geo_sel
         [fig_1, fig_2, fig_3, start_time, end_time] = get_3_channel_figures(start_time, end_time, geo_sel,
                                                   filter_50Hz_f, path_root, oversampling_factor, format_in)
     if ctx.triggered_id in ['x_plot', 'y_plot', 'z_plot']:
@@ -302,7 +303,7 @@ def update_plot(geo_sel, starttime_app, endtime_app, config_name, relayoutdata_1
             fig_2['layout']['xaxis']['autorange'] = True
             fig_3['layout']['xaxis']['autorange'] = True
 
-    if ctx.triggered_id not in ['update', 'export']:
+    if ctx.triggered_id not in ['export']:
         layout1 = update_layout_3_channels(fig_1, start_time, end_time, min_x, max_x, auto_x)
         fig_1['layout'] = layout1
         layout2 = update_layout_3_channels(fig_2, start_time, end_time, min_y, max_y, auto_y)
