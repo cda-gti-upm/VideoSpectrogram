@@ -78,7 +78,6 @@ auto_y_fig1 = ['autorange'] if auto_y_fig1 == 'autorange' else []
 
 path_root = f'./data/CSIC_{location}'
 data_path = path_root + '_' + GEOPHONE + '_' + CHANNEL
-
 TR = read_and_preprocessing(data_path, format_in, STARTTIME, ENDTIME, filter_50Hz_f)
 
 STARTTIME = TR.stats.starttime
@@ -229,6 +228,7 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, config_name, r
     ini_exec_time = time.time()
     dates_error = False
     compute_graph = True if ctx.triggered_id is None else False
+
     try:
         start_time = UTCDateTime(starttime_app)
         end_time = UTCDateTime(endtime_app)
@@ -249,6 +249,7 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, config_name, r
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
     elif ctx.triggered_id == 'save_config':
+        print('Saving configuration...')
         parameters = {'option': OPTION,
                       'start_time': start_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
                       'end_time': end_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
@@ -270,6 +271,7 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, config_name, r
                       's_max': str(s_max)}
         create_config(parameters, config_name)
     elif ctx.triggered_id == 'export':
+        print('Saving figures...')
         if not os.path.exists("./exports"):
             os.mkdir("./exports")
         fig1 = go.Figure(data=fig_1['data'], layout=fig_1['layout'])
@@ -278,7 +280,7 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, config_name, r
         fig2 = go.Figure(data=fig_2['data'], layout=fig_2['layout'])
         file_title = fig2['layout']['title']['text']
         fig2.write_image(file=f"./exports/{file_title}.svg", format="svg", width=1920, height=1080, scale=1)
-        print('Export completed.')
+        print('Export completed!')
 
     elif ctx.triggered_id == 'update':
         if channel_selector != CHANNEL or geo_sel != GEOPHONE or start_time < STARTTIME or end_time > ENDTIME: # Read new data only if a parameter is changed
@@ -343,7 +345,7 @@ def update(geo_sel, channel_selector, starttime_app, endtime_app, config_name, r
     if type(start_time) is str:  # First time is UTC, after is string
         start_time = UTCDateTime(start_time)
         end_time = UTCDateTime(end_time)
-    print(f'Execution took {round(time.time() - ini_exec_time, 2)} seconds...')
+    print(f'Updating took {round(time.time() - ini_exec_time, 2)} seconds...')
     print('UPDATE COMPLETED!')
     return (fig_1, fig_2, {'autosize': True}, {'autosize': True},
             start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))

@@ -514,6 +514,7 @@ def create_config(params, file_name):
     with open(file_path, 'wb') as file:
         # Serialize and write the variable to the file
         pickle.dump(params, file, protocol=pickle.HIGHEST_PROTOCOL)
+        print(f'Configuration is saved as: {file_name}')
 
 
 def load_config(file_path):

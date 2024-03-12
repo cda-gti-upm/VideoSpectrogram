@@ -25,7 +25,7 @@ auto_y_fig3 = 'autorange'
 
 args = sys.argv
 if len(args) > 1:
-    file_path = f'./user_config/{args[1]}'
+    file_path = f'./user_config/{args[1]}.pickle'
     params = load_config(file_path)
     if params['option'] == 1:
         params['auto_y_fig1'] = 'autorange' if params['auto_y_fig1'] == ['autorange'] else 'no'

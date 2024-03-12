@@ -204,8 +204,10 @@ app.layout = html.Div([
 )
 def update_plot(geo_sel, starttime_app, endtime_app, config_name, relayoutdata_1, relayoutdata_2, relayoutdata_3, max_x, min_x, max_y,
                 min_y, max_z, min_z, auto_x, auto_y, auto_z, button, update, export_button, save, fig_1, fig_2, fig_3):
+
     global GEOPHONE
     ini_exec_time = time.time()
+
     try:
         start_time = UTCDateTime(starttime_app)
         end_time = UTCDateTime(endtime_app)
@@ -217,6 +219,7 @@ def update_plot(geo_sel, starttime_app, endtime_app, config_name, relayoutdata_1
         start_time = UTCDateTime(fig_1['data'][0]['x'][0])
         end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
         print('No valid dates')
+
     if ctx.triggered_id == 'export':
         print('Saving figures...')
         if not os.path.exists("./exports"):
@@ -238,13 +241,14 @@ def update_plot(geo_sel, starttime_app, endtime_app, config_name, relayoutdata_1
         figz.write_image(file="./exports/figz.svg", format="svg", width=1920, height=1080, scale=1)
         print('Export completed.')
 
-
     elif ctx.triggered_id == 'kill_button':
         print('Closing app...')
         pyautogui.hotkey('ctrl', 'w')
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
+
     elif ctx.triggered_id == 'save_config':
+        print('Saving configuration...')
         parameters = {'option': OPTION,
                       'start_time': start_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
                       'end_time': end_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
@@ -262,37 +266,34 @@ def update_plot(geo_sel, starttime_app, endtime_app, config_name, relayoutdata_1
                       'max_y_fig3': str(max_z),
                       'auto_y_fig3': auto_z}
         create_config(parameters, config_name)
+
     elif ctx.triggered_id == 'update' and (geo_sel != GEOPHONE or start_time != UTCDateTime(fig_1['data'][0]['x'][0]) or end_time != UTCDateTime(fig_1['data'][0]['x'][-1])):
         GEOPHONE = geo_sel
         [fig_1, fig_2, fig_3, start_time, end_time] = get_3_channel_figures(start_time, end_time, geo_sel,
                                                   filter_50Hz_f, path_root, oversampling_factor, format_in)
+
     if ctx.triggered_id in ['x_plot', 'y_plot', 'z_plot']:
         if "xaxis.range[0]" in relayoutdata_1:
             start_time = UTCDateTime(relayoutdata_1['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_1['xaxis.range[1]'])
             fig_2['layout']['xaxis']['autorange'] = False
             fig_2['layout']['xaxis']['range'] = [start_time, end_time]
-
             fig_3['layout']['xaxis']['autorange'] = False
             fig_3['layout']['xaxis']['range'] = [start_time, end_time]
-
 
         elif "xaxis.range[0]" in relayoutdata_2:
             start_time = UTCDateTime(relayoutdata_2['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_2['xaxis.range[1]'])
             fig_1['layout']['xaxis']['autorange'] = False
             fig_1['layout']['xaxis']['range'] = [start_time, end_time]
-
             fig_3['layout']['xaxis']['autorange'] = False
             fig_3['layout']['xaxis']['range'] = [start_time, end_time]
-
 
         elif "xaxis.range[0]" in relayoutdata_3:
             start_time = UTCDateTime(relayoutdata_3['xaxis.range[0]'])
             end_time = UTCDateTime(relayoutdata_3['xaxis.range[1]'])
             fig_1['layout']['xaxis']['autorange'] = False
             fig_1['layout']['xaxis']['range'] = [start_time, end_time]
-
             fig_2['layout']['xaxis']['autorange'] = False
             fig_2['layout']['xaxis']['range'] = [start_time, end_time]
 
@@ -317,11 +318,14 @@ def update_plot(geo_sel, starttime_app, endtime_app, config_name, relayoutdata_1
     if ctx.triggered_id is None:
         start_time = UTCDateTime(fig_1['data'][0]['x'][0])
         end_time = UTCDateTime(fig_1['data'][0]['x'][-1])
-    print(f'Execution took {round(time.time() - ini_exec_time, 2)} seconds...')
+
+    print(f'Updating took {round(time.time() - ini_exec_time, 2)} seconds...')
     print('UPDATE COMPLETED!')
+
     return (fig_1, fig_2, fig_3, {'autosize': True}, {'autosize': True}, {'autosize': True},
             start_time.strftime("%Y-%m-%d %H:%M:%S.%f"), end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))
 
- # Run the app
+
+# Run the app
 Timer(1, open_browser, args=(port,)).start()
 app.run_server(debug=False, port=port)

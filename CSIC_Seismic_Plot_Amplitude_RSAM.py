@@ -77,7 +77,6 @@ auto_y_fig2 = ['autorange'] if auto_y_fig2 == 'autorange' else []
 
 path_root = f'./data/CSIC_{location}'
 data_path = path_root + '_' + GEOPHONE + '_' + CHANNEL
-print(f' Data path is: {data_path}')
 TR = read_and_preprocessing(data_path, format_in, STARTTIME, ENDTIME, filter_50Hz_f)
 
 STARTTIME = TR.stats.starttime
@@ -230,6 +229,7 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, config_na
         pid = os.getpid()
         os.kill(pid, signal.SIGTERM)
     elif ctx.triggered_id == 'save_config':
+        print('Saving configuration...')
         parameters = {'option': OPTION,
                       'start_time': start_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
                       'end_time': end_time.strftime("%Y-%m-%dT%H:%M:%S.%f"),
@@ -246,6 +246,7 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, config_na
                       'auto_y_fig2': auto_y_rsam}
         create_config(parameters, config_name)
     elif ctx.triggered_id == 'export':
+        print('Saving figures...')
         if not os.path.exists("./exports"):
             os.mkdir("./exports")
         fig1 = go.Figure(data=fig_1['data'], layout=fig_1['layout'])
@@ -254,7 +255,7 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, config_na
         fig2 = go.Figure(data=fig_2['data'], layout=fig_2['layout'])
         file_title = fig2['layout']['title']['text']
         fig2.write_image(file=f"./exports/{file_title}.svg", format="svg", width=1920, height=1080, scale=1)
-        print('Export completed.')
+        print('Export completed!')
     elif ctx.triggered_id == 'update':
         # Read new data
         #  Read new data only if a parameter is changed
@@ -310,12 +311,13 @@ def update_plot(geo_sel, channel_selector, starttime_app, endtime_app, config_na
             start_time = fig_1['data'][0]['x'][0]
             end_time = fig_1['data'][0]['x'][-1]
 
-
     if type(start_time) is str: #First time is UTC, after is string
         start_time = UTCDateTime(start_time)
         end_time = UTCDateTime(end_time)
-    print(f'Execution took {round(time.time() - ini_exec_time, 2)} seconds...')
-    print('UPDATE COMPLETED!')
+
+    print(f'Updating took {round(time.time() - ini_exec_time, 2)} seconds...')
+    print('Update completed!')
+
     return (fig_1, fig_2, {'autosize': True}, {'autosize': True}, start_time.strftime("%Y-%m-%d %H:%M:%S.%f"),
             end_time.strftime("%Y-%m-%d %H:%M:%S.%f"))
 

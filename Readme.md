@@ -94,6 +94,10 @@ If option 2 is selected, the program will first check the start and end time of 
 ![alt text](./screenshots/reading_3_channels.png)
 
 
+Alternatively, you can pass as a parameter of the program a saved configuration: python CSIC_Seismic_Dash_Visualizator_UI.py config_name.
+The parameter is the name of the file of the configuration saved in `./user_config`.
+![alt text](./screenshots/interface_param.png)
+
 
 # Options 1, 3 and 4
 
@@ -120,7 +124,7 @@ The frequency range selectors is meant to select the displayed frequencies, whic
 
 
 
-Additionally, it must be said that for options 1, 3 and 4 there is the possibility of zooming manually over the figure. After zooming, the program will compute a more precise representation for the selected area, and all figures will be synchronized. This may take a time, primaraly if there is a spectrogram involved. If the user wants to bring back the original representation, the 'Autoscale' button, present on every figure, must be pressed.
+Additionally, it must be said that for options 1, 3 and 4 there is the possibility of zooming manually over the figure. After zooming, the program will compute a more precise representation for the selected area, and all figures will be synchronized. This may take a time, primaraly if there is a spectrogram involved. If the user wants to bring back the original representation, the 'Reset axis' button, present on every figure, must be pressed.
 
 ![alt text](./screenshots/autoscale.png)
 
