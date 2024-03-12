@@ -140,6 +140,12 @@ If the user selects this option, the program will display the 3 channels of a si
 The operation of this program is the same that for the others but for one difference. As we have information of 3 channels, there is a lot of information to be stored. Therefore, after zooming on one figure, the program will not recompute automatically the plot for that area. The zoom of the 3 figures will still be synchronized, but after each zoom resolution will be lost. The user may press the 'Update data' button after the zoom to get a more precise representation. However, this will take a considerable amount of time, as the information from the geophones must be readed again.
 
 
+# Saving a configuration
+
+The program has the possibility of saving a configuration that can be reloaded later without having to modify all the salectors. You just have to write a config_name and press the 'Save config' button. For loading the configuration just write python CSIC_Seismic_Dash_Visualizator_UI.py and then the configuration name.
+
+![alt text](./screenshots/config_save.png)
+
 
 #  Some considerations
 
