@@ -106,7 +106,7 @@ The operation of theese 3 options is similar:
 ![alt text](./screenshots/interface_option1.png)
 
 
-First, we have a geoophone selector, channel selector and start and end dates selector. Theese selectors are used to read new data. If the user wishes to do so, after selecting the parameters, the button 'Read new data' must be pressed.
+First, we have a geoophone selector, channel selector and start and end dates selector. Theese selectors are used to read new data. If the user wishes to do so, after selecting the parameters, the button 'Update data' must be pressed.
 
 There is also a button 'Export in SVG'. After pressing it, all the figures on the screen will be exported to the folder (`exports/`) on the project directory.
 
@@ -137,12 +137,12 @@ If the user selects this option, the program will display the 3 channels of a si
 
 ![alt text](./screenshots/3_channels_interface.png)
 
-The operation of this program is the same that for the others but for one difference. As we have information of 3 channels, there is a lot of information to be stored. Therefore, after zooming on one figure, the program will not recompute automatically the plot for that area. The zoom of the 3 figures will still be synchronized, but after each zoom resolution will be lost. The user may press the 'Read new data' button after the zoom to get a more precise representation. However, this will take a considerable amount of time, as the information from the geophones must be readed again.
+The operation of this program is the same that for the others but for one difference. As we have information of 3 channels, there is a lot of information to be stored. Therefore, after zooming on one figure, the program will not recompute automatically the plot for that area. The zoom of the 3 figures will still be synchronized, but after each zoom resolution will be lost. The user may press the 'Update data' button after the zoom to get a more precise representation. However, this will take a considerable amount of time, as the information from the geophones must be readed again.
 
 
 
 #  Some considerations
 
-It is recommended not to touch any input of the program when in the tab name appears 'Updating...', unless you press the 'Close app' button. Wait until it disappears before changing any parameter, specially after pressing the button 'Read new data'. The reading of new data may be interrupted and the representation lost, so it would be necessary to refresh the page and read again.
+It is recommended not to touch any input of the program when in the tab name appears 'Updating...', unless you press the 'Close app' button. Wait until it disappears before changing any parameter, specially after pressing the button 'Update data'. The reading of new data may be interrupted and the representation lost, so it would be necessary to refresh the page and read again.
 
 ![alt text](./screenshots/updating.png)
