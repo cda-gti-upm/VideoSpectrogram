@@ -47,7 +47,7 @@ sock.bind(('', 0))
 port = sock.getsockname()[1]
 del sock
 
-oversampling_factor = 2  # The higher, the more samples in the amplitude figure
+oversampling_factor = 5  # The higher, the more samples in the amplitude figure
 
 try:
     if start:

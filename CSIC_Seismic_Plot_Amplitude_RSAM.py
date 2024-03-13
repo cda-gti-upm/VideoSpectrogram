@@ -39,7 +39,7 @@ auto_y_fig2 = args[13]
 
 OPTION = 1
 
-oversampling_factor = 2  # A higher value gives more samples to the plot
+oversampling_factor = 5  # A higher value gives more samples to the plot
 
 # Get a free random port
 sock = socket.socket()
