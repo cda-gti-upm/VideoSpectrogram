@@ -267,12 +267,12 @@ def prepare_time_plot_3_channels(tr, oversampling_factor, channel):
 
 
 def prepare_rsam(tr):
-    n_samples = int(tr.meta.sampling_rate * 60 * 10)  # Amount to 10 minutes
+    n_samples = int(tr.meta.sampling_rate * 60 * 10)
     if n_samples == 0:
         n_samples = 1
     print('Computing RSAM...')
     tr.data = uniform_filter1d(abs(tr.data), size=n_samples)
-    df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})  # check for problems with date format
+    df = pd.DataFrame({'data': tr.data, 'times': tr.times('utcdatetime')})
     xlabel = "Date"
     ylabel = "Amplitude"
     title = generate_title(tr, 'RSAM')
@@ -526,6 +526,6 @@ def load_config(file_path):
             # Deserialize and retrieve the variable from the file
             loaded_data = pickle.load(file)
     except Exception as e:
-        print("Cannot read %s (%s: %s)" % (file, type(e).__name__, e))
-
+        print("Cannot read %s (%s: %s)" % (file_path, type(e).__name__, e))
+        sys.exit()
     return loaded_data
