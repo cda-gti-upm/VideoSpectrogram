@@ -27,5 +27,5 @@ verbose: True
 
 # Data format
 data_format:
-  format_in: SEG2        # Format of input datafiles
-  format_out: PICKLE  # Format of output datafiles
+  format_in: SEG2  # Format of input datafiles
+  format_out: PICKLE  # Format of output datafiles (BZ2, PICKLE, etc.)

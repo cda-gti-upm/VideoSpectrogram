@@ -10,6 +10,9 @@ Install the following elements by writting this in the terminal:
 - pip install pyfiglet==1.0.2
 - pip install screeninfo==0.8.1
 - pip install pyyaml==6.0.1
+- pip install bz2file==0.98
+- pip install cairosvg==2.7.1
+- pip install psutil==5.9.8
 
 # Data preparation and preprocessing
 Data from geophones should be in the project folder `.\data\LaPalma`

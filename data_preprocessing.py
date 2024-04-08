@@ -30,8 +30,10 @@ import scipy.signal
 import argparse
 import yaml
 import shutil
-from utils import read_data_from_folder
+from utils import read_data_from_folder, write_stream_bz2_pickle
 from utils import detect_anomalies, correct_data_anomalies
+import warnings
+import time
 
 
 """
@@ -59,14 +61,14 @@ def split_data_per_location_channel(stream, network, station):
 
     return trace_list
 
-def write_data_per_location_channel(trace_list, filename, path_output, format_out):
+def write_data_per_location_channel(trace_list, filename, path_output):
     # Write data into a new hierarchy of folders and files according to the network, station, location, and channel information.
     # Save data into pickle format
     for i, trace in enumerate(trace_list):
         file_name = os.path.splitext(os.path.basename(file))[0]
         dir_name = f'{path_output}/{trace.meta.network}/{trace.meta.station}/{trace.meta.location}/{trace.meta.channel}'
         os.makedirs(dir_name, exist_ok=True)
-        trace.write(f'{dir_name}/{file_name}.pickle', format=format_out)
+        trace.write(f'{dir_name}/{file_name}.pickle', format='PICKLE')
 
 def fast_scandir(dirname):
     subfolders = [f.path for f in os.scandir(dirname) if f.is_dir()]
@@ -76,6 +78,7 @@ def fast_scandir(dirname):
 
 
 if __name__ == "__main__":
+    start = time.time()
     """
     # Process input arguments given by the configuration file
     """
@@ -110,12 +113,14 @@ if __name__ == "__main__":
     dirlist = sorted(os.listdir(path_data))
     path_output_tmp = path_output+'/tmp'
     print(f'Create temporal data in {path_output_tmp}')
+
     for file in tqdm(dirlist):
         file = os.path.join(path_data, file)
         if os.path.isfile(file):
             try:
                 # Read data file
-                st = obspy.read(file, format=format_in, headonly=False)
+                with warnings.catch_warnings(action="ignore"):
+                    st = obspy.read(file, format=format_in, headonly=False)
                 st = correct_data_anomalies(st, 1000000)
             except Exception as e:
                 if verbose:
@@ -136,8 +141,7 @@ if __name__ == "__main__":
                 st.detrend('demean')
 
             trace_list = split_data_per_location_channel(st, network=network, station=station)
-            write_data_per_location_channel(trace_list, file, path_output_tmp, format_out)
-
+            write_data_per_location_channel(trace_list, file, path_output_tmp)
 
     """ 
     Step 2: store data in large size files to speed up posterior data processing
@@ -149,9 +153,9 @@ if __name__ == "__main__":
     print(f'Step 2 out 3: store data in large data files ...')
     # Read data
     path_list = fast_scandir(f'{path_output_tmp}')
-    for path_i in tqdm(path_list):
+    for i, path_i in enumerate(path_list):
         print(f'Reading data from {path_i}')
-        st = read_data_from_folder(path_i, format_out, starttime=None, endtime=None)
+        st = read_data_from_folder(path_i, 'PICKLE', starttime=None, endtime=None)
 
         # Skip if no data in directory
         if not st:
@@ -166,7 +170,7 @@ if __name__ == "__main__":
         startday = UTCDateTime(st[0].stats.starttime)
         endday = UTCDateTime(st[-1].stats.endtime)
         last_time = []
-        for i in tqdm(range(int(startday.timestamp), int(endday.timestamp) + 1, time_interval)):
+        for i in range(int(startday.timestamp), int(endday.timestamp) + 1, time_interval):
             st_day = st.slice(UTCDateTime(i), UTCDateTime(i) + time_interval - 1)
             st_day.sort(['starttime'])
             # Merge traces
@@ -181,7 +185,10 @@ if __name__ == "__main__":
                         f'.{format_out.lower()}'
             print(f'Writing file: {file_name} with data from {UTCDateTime(i).strftime("%d-%b-%Y at %H.%M.%S")} '
                   f'until {UTCDateTime(i + time_interval-1).strftime("%d-%b-%Y at %H.%M.%S")}')
-            st_day.write(file_name, format=format_out)
+            if format_out.lower() == 'bz2':
+                write_stream_bz2_pickle(st_day, file_name)
+            else:
+                st_day.write(file_name, format=format_out)
             last_time = i + time_interval - 1
 
 
@@ -190,4 +197,7 @@ if __name__ == "__main__":
     """
     print(f'Step 3 out 3: delete temporal data data ...')
     shutil.rmtree(f'{path_output_tmp}')
+
+    end = time.time()
+    print(f'Total computation time: {((end - start)/3600): .2f} hours')
 

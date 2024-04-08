@@ -179,7 +179,7 @@ def sonify_input(
     filter_50Hz = True
     if filter_50Hz:
         sr = 250
-        tr.data = obspy.signal.filter.bandstop(tr.data, 49, 51, sr, corners=8, zerophase=True)
+        tr.data = obspy.signal.filter.bandstop(tr.data, 49.8, 50.2, sr, corners=8, zerophase=True)
 
     """
     # Now that we have just one Trace, get inventory (which has response info)
@@ -245,7 +245,7 @@ def sonify_input(
     tr.taper(max_percentage=None, max_length=PAD / 2)  # Taper away some of PAD
     """
     # Correct sensor response
-    correc_f = True
+    correc_f = False
     # Sensor correction parameters: coefficients of the numerator and denominator of the transfer function
     b = [1.0000, -1.5365, 0.6507]  # Numerator
     a = [-1.0000, 1.9388, -0.9388]  # Denominator
@@ -257,7 +257,9 @@ def sonify_input(
             'gain': k,
             'sensitivity': 1}
         tr.simulate(paz_remove=paz)
-    tr.detrend('demean')
+    detrend_f = False
+    if detrend_f:
+        tr.detrend('demean')
 
     print(f'Applying {freqmin:g}–{freqmax:g} Hz bandpass')
     tr.filter('bandpass', freqmin=freqmin, freqmax=freqmax, zerophase=True)
@@ -270,6 +272,7 @@ def sonify_input(
     temp_dir = tempfile.TemporaryDirectory()
 
     # MAKE AUDIO FILE
+    print('Preparing audio file ...')
 
     tr_audio = tr_trim.copy()
     target_fs = AUDIO_SAMPLE_RATE / speed_up_factor
@@ -277,7 +280,7 @@ def sonify_input(
     if corner_freq < tr_audio.stats.sampling_rate / 2:  # To avoid ValueError
         tr_audio.filter('lowpass', freq=corner_freq, corners=10, zerophase=True)
     tr_audio.interpolate(sampling_rate=target_fs, method='lanczos', a=20)
-    tr_audio.taper(0.01)  # For smooth start and end
+    #tr_audio.taper(0.01)  # For smooth start and end
     #audio_file = Path(temp_dir.name) / '47.wav'
     tr_id_str = '_'.join([code for code in tr.id.split('.') if code])
     audio_file = output_dir / f'{tr_id_str}_{tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")}_{speed_up_factor}x.wav'
@@ -289,9 +292,10 @@ def sonify_input(
         rescale=True,
         framerate=AUDIO_SAMPLE_RATE,
     )
-    print('Done')
+    print('Done audio file')
 
     # MAKE VIDEO FILE
+    print('Preparing video file ...')
 
     # We don't need an anti-aliasing filter here since we never use the values,
     # just the timestamps
@@ -349,7 +353,7 @@ def sonify_input(
         dpi=RESOLUTIONS[resolution][0] / FIGURE_WIDTH,  # Can be a float...
     )
     frames_tqdm.close()
-    print('Done')
+    print('Done video file')
 
     # Restore user's rc settings, ignoring Matplotlib deprecation warnings
     with warnings.catch_warnings():

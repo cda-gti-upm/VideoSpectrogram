@@ -20,6 +20,9 @@ import argparse
 import yaml
 import pickle
 from scipy.ndimage import uniform_filter1d
+import cairosvg
+import psutil
+import time
 
 """
 Functions
@@ -45,7 +48,7 @@ def read_and_preprocessing(path_data, format_in, starttime, endtime):
     # Filtering 50 Hz
     if filter_50Hz_f:
         print(f'Filtering 50 Hz signal ...')
-        tr.data = obspy.signal.filter.bandstop(tr.data, 49, 51, tr.meta.sampling_rate, corners=8, zerophase=True)
+        tr.data = obspy.signal.filter.bandstop(tr.data, 49.8, 50.2, tr.meta.sampling_rate, corners=8, zerophase=True)
 
     return tr
 
@@ -118,19 +121,45 @@ def save_figure(path_output, prefix_name, tr, fig, fig_format):
     print(f'Saving figure...')
     plt.figure(fig)
     os.makedirs(path_output, exist_ok=True)
-    file_name = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
-                f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
-                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.{fig_format}'
+    if fig_format.lower == 'ps':
+        file_name = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
+                    f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
+                    f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.svg'
+        full_filename = f'{file_name}'
+        plt.savefig(full_filename)
+        base_name, file_extension = os.path.splitext(full_filename)
+        cairosvg.svg2ps(url=full_filename, write_to=base_name + '.ps')
+        os.remove(full_filename)
+    else:
+        file_name = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
+                    f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
+                    f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.{fig_format}'
+        full_filename = f'{file_name}'
+        plt.savefig(full_filename)
     """
     file_name_pickle = f'{path_output}/plot_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
                 f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.pickle'
     pickle.dump(fig, open(file_name_pickle, 'wb'))
     """
-    plt.savefig(f'{file_name}')
+
+
 
 # Main program
 if __name__ == "__main__":
+    start = time.time()
+    """
+    Check available memory RAM
+    """
+    # Get current RAM usage using psutil
+    mem_usage = psutil.virtual_memory()
+    RAM_th = 35
+    if mem_usage[2] > RAM_th:
+        print(f'Used RAM memory {mem_usage[2]}%')
+        print(f'A significant amount of RAM memory (more than {RAM_th}%) is being used by other applications. '
+              'Close them before continuing if you plan to process large periods of seismic data.\n')
+        input("Press Enter to continue...")
+
     """
     Process input arguments given by the configuration file.
     The configuration file can have several set of parameters for plotting different geophones and channels.
@@ -217,3 +246,5 @@ if __name__ == "__main__":
         # st.plot(type='dayplot', interval=interval_min, size=(4096, 2304))
         st.plot(type='dayplot', interval=time_interval_one_row, size=(4096, 2304), outfile=f'{file_name}')
         """
+    end = time.time()
+    print(f'Total computation time: {((end - start) / 3600): .2f} hours')

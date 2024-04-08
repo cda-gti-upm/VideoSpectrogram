@@ -44,7 +44,7 @@ def read_and_preprocessing(path_data, format_in, starttime, endtime):
     # Filtering 50 Hz
     if filter_50Hz_f:
         print(f'Filtering 50 Hz signal ...')
-        tr.data = obspy.signal.filter.bandstop(tr.data, 49, 51, tr.meta.sampling_rate, corners=8, zerophase=True)
+        tr.data = obspy.signal.filter.bandstop(tr.data, 49.8, 50.2, tr.meta.sampling_rate, corners=8, zerophase=True)
     return tr
 
 def prepare_fig(tr, prefix_name, a_min, a_max, fig, ax):

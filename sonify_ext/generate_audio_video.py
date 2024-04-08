@@ -9,9 +9,9 @@ from tqdm import tqdm
 """
 Arguments
 """
-path_data = '../data/CSIC_LaPalma_Geophone8_Z'
-starttime = "2021-11-29 00:30:00"
-endtime = "2021-11-29 00:50:00"
+path_data = '../data/CSIC_ELHierro_Geophone1_X'
+starttime = "2021-10-09 14:30:00"
+endtime = "2021-10-09 14:50:00"
 speed_up_factor = 50
 
 
@@ -27,7 +27,7 @@ if endtime:
 # Audio and video generation
 sonify_input(
     path_data=path_data,
-    format_in='PICKLE',
+    format_in='BZ2',
     starttime=starttime,
     endtime=endtime,
     freqmin=None,

@@ -1,6 +1,6 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone1_X/  # Path to input datafiles
+  path_data: ./data/CSIC_ElHierro_Geophone1_X/  # Path to input datafiles
   path_output: ./results/seismic_plots    # Path for output data (results)
 
 # Date range to plot
@@ -14,7 +14,7 @@ filter:
 
 # Data format
 data_format:
-  format_in:  PICKLE  # Format of input datafiles
+  format_in: PICKLE  # Format of input datafiles: BZ2 or PICKLE
 
 # Plotting
 plotting:
@@ -27,7 +27,7 @@ day_plotting:
   time_interval_one_row: 1440  # In minutes
 
 # Format of figure file
-fig_format: svg  # png, eps, pdf
+fig_format: ps  # png, eps, pdf, ps, svg
 
 # Verbosing
 verbose: True
