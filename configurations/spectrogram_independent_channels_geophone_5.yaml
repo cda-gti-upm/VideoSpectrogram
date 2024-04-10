@@ -1,6 +1,6 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone5_X/  # Path to input datafiles
+  path_data: ./data/CSIC_ElHierro_Geophone5_X/  # Path to input datafiles
   path_output: ./results/spectrogram_plots    # Path for output data (results)
 
 # Date range to plot
@@ -41,7 +41,7 @@ day_plotting:
   time_interval_one_row: 1440  # In minutes
 
 # Format of figure file
-fig_format: svg  # png, eps, pdf
+fig_format: svg  # png, eps, pdf, ps
 
 # Image size (resolution) for plottings
 Img_width: 1920
@@ -54,7 +54,7 @@ verbose: True
 
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone5_Y/  # Path to input datafiles
+  path_data: ./data/CSIC_ElHierro_Geophone5_Y/  # Path to input datafiles
   path_output: ./results/spectrogram_plots    # Path for output data (results)
 
 # Date range to plot
@@ -95,7 +95,7 @@ day_plotting:
   time_interval_one_row: 1440  # In minutes
 
 # Format of figure file
-fig_format: svg  # png, eps, pdf
+fig_format: svg  # png, eps, pdf, ps
 
 # Image size (resolution) for plottings
 Img_width: 1920
@@ -108,7 +108,7 @@ verbose: True
 
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone5_Z/  # Path to input datafiles
+  path_data: ./data/CSIC_ElHierro_Geophone5_Z/  # Path to input datafiles
   path_output: ./results/spectrogram_plots    # Path for output data (results)
 
 # Date range to plot
@@ -149,7 +149,7 @@ day_plotting:
   time_interval_one_row: 1440  # In minutes
 
 # Format of figure file
-fig_format: svg  # png, eps, pdf
+fig_format: svg  # png, eps, pdf, ps
 
 # Image size (resolution) for plottings
 Img_width: 1920

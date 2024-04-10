@@ -11,8 +11,10 @@ import obspy
 from obspy.core import UTCDateTime
 import librosa
 import numpy as np
-from utils import read_data_from_folder
+from utils import read_data_from_folder, check_ram
 import sys
+import cairosvg
+import psutil
 
 
 # Parameters
@@ -37,6 +39,9 @@ format_in = 'PICKLE'
 
 
 if __name__ == "__main__":
+    # Check ram
+    check_ram()
+
     # Date preprocessing
     if starttime:
         starttime = UTCDateTime(starttime)

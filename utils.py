@@ -29,30 +29,14 @@ def read_data_from_folder(path_data, format, starttime, endtime, verbose=True):
                         st = obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
                     first_file = False
                     # Memory report
-                    startday = UTCDateTime(st[0].stats.starttime)
-                    endday = UTCDateTime(st[0].stats.endtime)
-                    num_days_total = num_days_total + (endday - startday)/86400
-                    mem_usage = psutil.virtual_memory()
-                    print(f'\nUsed RAM memory {mem_usage[2]}% (after loading {num_days_total: .2f} days of seismic data'
-                          f' from {st[0].meta.location} and channel {st[0].meta.channel}).')
-                    RAM_th = 95
-                    if mem_usage[2] > RAM_th:
-                        print(f'WARNING: RAM memory is full. The processing will be terribly slow!!!')
+                    memory_report(st[0], num_days_total)
                 else:
                     if format.lower() == 'bz2':
                         st += read_stream_bz2_pickle(file)
                     else:
                         st += obspy.read(file, format=format, headonly=False, starttime=starttime, endtime=endtime)
-                    # Memory report
-                    startday = UTCDateTime(st[0].stats.starttime)
-                    endday = UTCDateTime(st[0].stats.endtime)
-                    num_days_total = num_days_total + (endday - startday)/86400
-                    mem_usage = psutil.virtual_memory()
-                    print(f'\nUsed RAM memory {mem_usage[2]}% (after loading {num_days_total: .2f} days of seismic data'
-                          f' from {st[0].meta.location} and channel {st[0].meta.channel}).')
-                    RAM_th = 95
-                    if mem_usage[2] > RAM_th:
-                        print(f'WARNING: RAM memory is full. The processing will be terribly slow!!!')
+                        # Memory report
+                        memory_report(st[0], num_days_total)
             except Exception as e:
                 if verbose:
                     print("Can not read %s (%s: %s)" % (file, type(e).__name__, e))
@@ -156,3 +140,32 @@ def read_stream_bz2_pickle(filename):
 
     data = bz2.BZ2File(filename, 'rb')
     return pickle.load(data)
+
+def check_ram():
+    """
+    Check available memory RAM
+    """
+    # Get current RAM usage using psutil
+    mem_usage = psutil.virtual_memory()
+    RAM_th = 50
+    if mem_usage[2] > RAM_th:
+        print(f'Used RAM memory {mem_usage[2]}%')
+        print(f'A significant amount of RAM memory (more than {RAM_th}%) is being used by other applications. '
+              'Close them before continuing if you plan to process large periods of seismic data.\n')
+        input("Press Enter to continue...")
+
+
+def memory_report(tr, num_days_total = 0):
+    mem_usage = memory_monitor()
+    startday = UTCDateTime(tr.stats.starttime)
+    endday = UTCDateTime(tr.stats.endtime)
+    num_days_total = num_days_total + (endday - startday) / 86400
+    print(f'\nUsed RAM memory {mem_usage[2]}% (after loading {num_days_total: .2f} days of seismic data'
+          f' from {tr.meta.location} and channel {tr.meta.channel}).')
+
+def memory_monitor():
+    mem_usage = psutil.virtual_memory()
+    RAM_th = 95
+    if mem_usage[2] > RAM_th:
+        print(f'WARNING: RAM memory is full. The processing will be terribly slow!!!')
+    return mem_usage

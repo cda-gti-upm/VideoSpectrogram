@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator, AutoLocator, MaxNLocator)
-from utils import read_data_from_folder
+from utils import read_data_from_folder, check_ram
 import numpy as np
 import argparse
 import yaml
@@ -148,17 +148,8 @@ def save_figure(path_output, prefix_name, tr, fig, fig_format):
 # Main program
 if __name__ == "__main__":
     start = time.time()
-    """
-    Check available memory RAM
-    """
-    # Get current RAM usage using psutil
-    mem_usage = psutil.virtual_memory()
-    RAM_th = 35
-    if mem_usage[2] > RAM_th:
-        print(f'Used RAM memory {mem_usage[2]}%')
-        print(f'A significant amount of RAM memory (more than {RAM_th}%) is being used by other applications. '
-              'Close them before continuing if you plan to process large periods of seismic data.\n')
-        input("Press Enter to continue...")
+    # Check ram
+    check_ram()
 
     """
     Process input arguments given by the configuration file.

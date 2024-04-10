@@ -34,6 +34,7 @@ from utils import read_data_from_folder, write_stream_bz2_pickle
 from utils import detect_anomalies, correct_data_anomalies
 import warnings
 import time
+import psutil
 
 
 """
@@ -79,6 +80,18 @@ def fast_scandir(dirname):
 
 if __name__ == "__main__":
     start = time.time()
+    """
+    Check available memory RAM
+    """
+    # Get current RAM usage using psutil
+    mem_usage = psutil.virtual_memory()
+    RAM_th = 35
+    if mem_usage[2] > RAM_th:
+        print(f'Used RAM memory {mem_usage[2]}%')
+        print(f'A significant amount of RAM memory (more than {RAM_th}%) is being used by other applications. '
+              'Close them before continuing if you plan to process large periods of seismic data.\n')
+        input("Press Enter to continue...")
+
     """
     # Process input arguments given by the configuration file
     """

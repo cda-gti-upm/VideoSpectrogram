@@ -1,6 +1,6 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma  # Path to input datafiles
+  path_data: ./data/CSIC_ElHierro  # Path to input datafiles
   path_output: ./results/spectrogram_plots    # Path for output data (results)
 
 # Initial geophone to display

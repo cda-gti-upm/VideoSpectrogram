@@ -1,6 +1,6 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma_Geophone1_X/  # Path to input datafiles
+  path_data: ./data/CSIC_ElHierro_Geophone1_X/  # Path to input datafiles
   path_output: ./results/spectrogram_plots    # Path for output data (results)
 
 # Date range to plot
@@ -38,7 +38,7 @@ day_plotting:
   time_interval_one_row: 1440  # In minutes
 
 # Format of figure file
-fig_format: svg  # png, eps, pdf
+fig_format: svg  # png, eps, pdf, ps
 
 # Verbosing
 verbose: True

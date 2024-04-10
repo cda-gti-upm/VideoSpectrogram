@@ -17,10 +17,12 @@ from obspy.core import UTCDateTime
 import obspy.signal.filter
 import librosa
 import numpy as np
-from utils import read_data_from_folder
+from utils import read_data_from_folder, check_ram
 import argparse
 import yaml
 import pickle
+import cairosvg
+import psutil
 
 """
 Functions
@@ -193,20 +195,34 @@ def save_figure(path_output, prefix_name, tr, fig, fig_format):
     print(f'Saving figure...')
     plt.figure(fig)
     os.makedirs(path_output, exist_ok=True)
-    file_name = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
-                f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
-                f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.{fig_format}'
+    if fig_format.lower == 'ps':
+        file_name = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
+                    f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
+                    f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.svg'
+        full_filename = f'{file_name}'
+        plt.savefig(full_filename)
+        base_name, file_extension = os.path.splitext(full_filename)
+        cairosvg.svg2ps(url=full_filename, write_to=base_name + '.ps')
+        os.remove(full_filename)
+    else:
+        file_name = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
+                    f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
+                    f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.{fig_format}'
+        plt.savefig(f'{file_name}')
+
     """
     file_name_pickle = f'{path_output}/{prefix_name}_{tr.meta.network}_{tr.meta.station}_{tr.meta.location}_{tr.meta.channel}_' \
                 f'from {tr.stats.starttime.strftime("%d-%b-%Y at %H.%M.%S")} ' \
                 f'until {tr.stats.endtime.strftime("%d-%b-%Y at %H.%M.%S")}.pickle'
     pickle.dump(fig, open(file_name_pickle, 'wb'))
     """
-    plt.savefig(f'{file_name}')
 
 
 # Main program
 if __name__ == "__main__":
+    # Check ram
+    check_ram()
+
     """
     Process input arguments given by the configuration file.
     The configuration file can have several set of parameters for plotting different geophones and channels.

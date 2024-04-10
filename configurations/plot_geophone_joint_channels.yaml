@@ -1,6 +1,6 @@
 # Data path
 paths:
-  path_data: ./data/CSIC_LaPalma # Path to input datafiles
+  path_data: ./data/CSIC_ElHierro # Path to input datafiles
 
 # Initial geophone to display
 geophone:

@@ -16,7 +16,7 @@ from matplotlib.dates import DateFormatter
 from matplotlib.ticker import (MultipleLocator, AutoMinorLocator, AutoLocator, MaxNLocator)
 from matplotlib.dates import DateFormatter
 from matplotlib.dates import AutoDateLocator, AutoDateFormatter
-from utils import read_data_from_folder
+from utils import read_data_from_folder, check_ram
 import numpy as np
 import argparse
 import yaml
@@ -24,6 +24,7 @@ import pickle
 from scipy.ndimage import uniform_filter1d
 from matplotlib.pyplot import show, colorbar
 from ltsa.ltsa import seismicLTSA
+import cairosvg
 
 """
 Functions
@@ -196,15 +197,26 @@ def save_figure2(path_output, prefix_name, tr_info, fig, fig_format):
     str_tmp = ""
     for tr_i in tr_info:
         str_tmp = str_tmp + tr_i.location + tr_i.channel + '-'
-    file_name = f'{path_output}/{prefix_name}_{str_tmp}.{fig_format}'
+    if fig_format.lower == 'ps':
+        file_name = f'{path_output}/{prefix_name}_{str_tmp}.svg'
+        full_filename = f'{file_name}'
+        plt.savefig(full_filename)
+        base_name, file_extension = os.path.splitext(full_filename)
+        cairosvg.svg2ps(url=full_filename, write_to=base_name + '.ps')
+        os.remove(full_filename)
+    else:
+        file_name = f'{path_output}/{prefix_name}_{str_tmp}.{fig_format}'
+        plt.savefig(f'{file_name}')
     """
     file_name_pickle = f'{path_output}/plot_{str_tmp}.pickle'
     pickle.dump(fig, open(file_name_pickle, 'wb'))
     """
-    plt.savefig(f'{file_name}')
 
 # Main program
 if __name__ == "__main__":
+    # Check ram
+    check_ram()
+
     """
     Process input arguments given by the configuration file.
     The configuration file can have several set of parameters for plotting different geophones and channels.
