@@ -14,6 +14,9 @@ Install the following elements by writting this in the terminal:
 - pip install cairosvg==2.7.1
 - pip install psutil==5.9.8
 
+Additionally, [ffmpeg](https://www.ffmpeg.org/download.html) should be installed for generating videos and audios of 
+spectrograms using sonify.
+
 # Data preparation and preprocessing
 Data from geophones should be in the project folder `.\data\LaPalma`
 Execute from the terminal: 
