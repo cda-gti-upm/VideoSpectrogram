@@ -15,7 +15,8 @@ Install the following elements by writting this in the terminal:
 - pip install psutil==5.9.8
 
 Additionally, [ffmpeg](https://www.ffmpeg.org/download.html) should be installed for generating videos and audios of 
-spectrograms using sonify.
+spectrograms using sonify. Follow the instructions from this [link](https://phoenixnap.com/kb/ffmpeg-windows) to add 
+ffmgeg to the system path.
 
 # Data preparation and preprocessing
 Data from geophones should be in the project folder `.\data\LaPalma`
