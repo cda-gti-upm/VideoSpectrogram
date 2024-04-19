@@ -474,7 +474,6 @@ def _spectrogram(
 
     spec_ax.set_ylabel('Frequency (Hz)')
     spec_ax.grid(linestyle=':')
-    #spec_ax.set_ylim(freq_lim)
     if log:
         spec_ax.set_yscale('log')
 
