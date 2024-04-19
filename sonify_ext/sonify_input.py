@@ -462,13 +462,19 @@ def _spectrogram(
     )
     """
 
+    """
     im = spec_ax.pcolormesh(
         t_mpl, f, sxx_db, cmap='jet', shading='nearest', rasterized=True
+    )
+    """
+
+    im = spec_ax.pcolormesh(
+        t_mpl, f, sxx_db, cmap='jet', shading='gouraud', rasterized=True
     )
 
     spec_ax.set_ylabel('Frequency (Hz)')
     spec_ax.grid(linestyle=':')
-    spec_ax.set_ylim(freq_lim)
+    #spec_ax.set_ylim(freq_lim)
     if log:
         spec_ax.set_yscale('log')
 
