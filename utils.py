@@ -7,7 +7,7 @@ from tqdm import tqdm
 import numpy as np
 from obspy.core.util.obspy_types import ObsPyException
 from pathlib import Path
-import bz2file as bz2
+#import bz2file as bz2
 import pickle
 import psutil
 
@@ -152,7 +152,7 @@ def check_ram():
         print(f'Used RAM memory {mem_usage[2]}%')
         print(f'A significant amount of RAM memory (more than {RAM_th}%) is being used by other applications. '
               'Close them before continuing if you plan to process large periods of seismic data.\n')
-        input("Press Enter to continue...")
+        #input("Press Enter to continue...")
 
 
 def memory_report(tr, num_days_total = 0):
