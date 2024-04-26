@@ -1,1 +1,0 @@
-python data_preprocessing.py configurations/preprocessingElHierro.yaml
